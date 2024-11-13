@@ -1,95 +1,91 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+// 'use client'
+// import React from 'react';
+// // import { Button, List, ListItem, ListItemText, Box } from '@mui/material';
+// import styles from "./page.module.css";
+// import Footer from 'C:\\Users\\jedho\\OneDrive\\Documents\\(9) Dentnotes\\dentnotes\\src\\app\\components\\Footer';
+// // import ProjectList from '../components/ProjectList'; // Import the ProjectList component
+// import { Dancing_Script, Instrument_Sans } from 'next/font/google';
+// const jetBrainsMono = Instrument_Sans({subsets: ['latin']});
+// import dynamic from 'next/dynamic';
 
-export default function Home() {
+
+// export default function Landing() {
+//   return (
+//     <main className={styles.main}>
+//       <div className={styles.content}>
+//         <div className={styles.topBar}>
+//           <a href="/" className={styles.logoLink}>
+//             <div className={styles.logo}>dentnotes</div>
+//           </a>
+//           <nav className={styles.navLinks}>
+//             <a href="/" className={styles.navLink}>home</a>
+//             <a href="/projects" className={styles.navLink}>contact</a>
+//             <a href="/contact" className={styles.navLink}>get started</a>
+//           </nav>
+//         </div>
+//       </div>
+//       <Footer />
+//     </main>
+//   );
+// }
+
+
+
+
+import Footer from './components/Footer';
+import Link from 'next/link'
+import Image from 'next/image'
+import { Zap } from 'lucide-react'
+import styles from './page.module.css'
+
+export default function LandingPage() {
   return (
-    <div className={styles.page}>
+    <div className={styles.container}>
+      <header className={styles.header}>
+        <Link href="https://dentnotes.com" className={styles.logo}>
+          <span>DENTNOTES</span>
+        </Link>
+        <nav className={styles.nav}>
+          <Link href="https://dentnotes.com" className={styles.navLink}>
+            contact us
+          </Link>
+          <Link href="https://dentnotes.com" className={`${styles.button} ${styles.navButton}`}>
+            get started
+          </Link>
+        </nav>
+      </header>
       <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+        <section className={styles.hero}>
+          <div className={styles.heroContent}>
+            <h1 className={styles.title}>
+              Create dental clinic<br />notes like never before.
+            </h1>
+            <p className={styles.subtitle}>
+              Forget manually typing your clinic notes, generate notes in seconds
+            </p>
+            <Link href="https://dentnotes.com" className={`${styles.button} ${styles.heroButton}`}>
+              <Zap className={styles.buttonIcon} />
+              Start clinics better
+            </Link>
+          </div>
+        </section>
+        <section className={styles.trust}>
+          <p className={styles.trustText}>trusted by folks from</p>
+          <Image
+            src="/uq logo.png"
+            alt="University Logo"
+            className={styles.trustLogo}
+            width={200}
+            height={48}
+          />
+        </section>
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+
+        <div className={styles.footerWrapper}>
+          <Footer />
         </div>
       </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
-  );
+  )
 }
+

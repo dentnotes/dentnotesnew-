@@ -3,13 +3,15 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Zap } from 'lucide-react'
 import styles from './page.module.css'
+import './styles/tailwind.css';
+
 
 export default function LandingPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <Link href="https://dentnotes.com" className={styles.logo}>
-          <span>DENTNOTES</span>
+          <span>dentnotes</span>
         </Link>
         <nav className={styles.nav}>
           <Link href="https://dentnotes.com" className={styles.navLink}>
@@ -34,6 +36,22 @@ export default function LandingPage() {
               <Zap className={styles.buttonIcon} />
               Start clinics better
             </Link>
+            <Image
+              src="/hero-bottom-left.png"  // Adjust filename based on your actual image name
+              alt="molar1"
+              className={styles.heroImageLeft}
+              width={500}
+              height={500}
+              priority
+            />
+            <Image
+              src="/hero-top-right.png"  // Adjust filename based on your actual image name
+              alt="molar2"
+              className={styles.heroImageRight}
+              width={500}
+              height={500}
+              priority
+            />
           </div>
         </section>
 

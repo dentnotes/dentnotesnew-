@@ -57,13 +57,22 @@ export default function LandingPage() {
 
         <section className={styles.trust}>
           <p className={styles.trustText}>trusted by folks from</p>
-          <Image
-            src="/uq logo.png"
-            alt="University Logo"
-            className={styles.trustLogo}
-            width={200}
-            height={48}
-          />
+          <div className={styles.trustLogos}>
+            <Image
+              src="/uq logo.png"
+              alt="UQ Logo"
+              className={styles.trustLogo}
+              width={200}
+              height={48}
+            />
+            <Image
+              src="/griffith-logo.png"
+              alt="Griffith Logo" 
+              className={styles.trustLogo}
+              width={200}
+              height={48}
+            />
+          </div>
         </section>
 
         <div className={styles.footerWrapper}>

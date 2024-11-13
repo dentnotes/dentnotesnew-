@@ -160,6 +160,13 @@
   /* margin-bottom: 50px; */
 }
 
+.trustLogos {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  justify-content: center;
+}
+
 @media (min-width: 640px) {
   .nav {
     gap: 1.5rem;

@@ -1,37 +1,3 @@
-// 'use client'
-// import React from 'react';
-// // import { Button, List, ListItem, ListItemText, Box } from '@mui/material';
-// import styles from "./page.module.css";
-// import Footer from 'C:\\Users\\jedho\\OneDrive\\Documents\\(9) Dentnotes\\dentnotes\\src\\app\\components\\Footer';
-// // import ProjectList from '../components/ProjectList'; // Import the ProjectList component
-// import { Dancing_Script, Instrument_Sans } from 'next/font/google';
-// const jetBrainsMono = Instrument_Sans({subsets: ['latin']});
-// import dynamic from 'next/dynamic';
-
-
-// export default function Landing() {
-//   return (
-//     <main className={styles.main}>
-//       <div className={styles.content}>
-//         <div className={styles.topBar}>
-//           <a href="/" className={styles.logoLink}>
-//             <div className={styles.logo}>dentnotes</div>
-//           </a>
-//           <nav className={styles.navLinks}>
-//             <a href="/" className={styles.navLink}>home</a>
-//             <a href="/projects" className={styles.navLink}>contact</a>
-//             <a href="/contact" className={styles.navLink}>get started</a>
-//           </nav>
-//         </div>
-//       </div>
-//       <Footer />
-//     </main>
-//   );
-// }
-
-
-
-
 import Footer from './components/Footer';
 import Link from 'next/link'
 import Image from 'next/image'
@@ -54,6 +20,7 @@ export default function LandingPage() {
           </Link>
         </nav>
       </header>
+
       <main className={styles.main}>
         <section className={styles.hero}>
           <div className={styles.heroContent}>
@@ -69,6 +36,7 @@ export default function LandingPage() {
             </Link>
           </div>
         </section>
+
         <section className={styles.trust}>
           <p className={styles.trustText}>trusted by folks from</p>
           <Image
@@ -79,7 +47,6 @@ export default function LandingPage() {
             height={48}
           />
         </section>
-
 
         <div className={styles.footerWrapper}>
           <Footer />

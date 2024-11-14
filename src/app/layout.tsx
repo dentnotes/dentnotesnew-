@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import "./styles/tailwind.css";
 
-// import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-// import { AppSidebar } from "@/components/app-sidebar"
+
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/app-sidebar"
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -22,29 +22,34 @@ export const metadata: Metadata = {
   description: "Create dental clinic notes like never before",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+// export default function RootLayout({
+//   children,
+// }: Readonly<{
+//   children: React.ReactNode;
+// }>) {
+//   return (
+//     <html lang="en">
+//       <body className={`${geistSans.variable} ${geistMono.variable}`}>
+//         {children}
+//       </body>
+//     </html>
+//   );
+// }
+
+
+export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
+        {/* <SidebarProvider>
+          <AppSidebar />
+          <main>
+            <SidebarTrigger />
+            {children}
+          </main>
+        </SidebarProvider> */}
       </body>
     </html>
-  );
+  )
 }
-
-
-// export default function Layout({ children }: { children: React.ReactNode }) {
-//   return (
-//     <SidebarProvider>
-//       <AppSidebar />
-//       <main>
-//         <SidebarTrigger />
-//         {children}
-//       </main>
-//     </SidebarProvider>
-//   )
-// }

@@ -1,9 +1,8 @@
-import Footer from './components/Footer';
+import Footer from '../components/Footer';
 import Link from 'next/link'
 import Image from 'next/image'
 import { Zap } from 'lucide-react'
 import styles from './page.module.css'
-import './styles/tailwind.css';
 
 
 export default function LandingPage() {

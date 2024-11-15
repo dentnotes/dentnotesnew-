@@ -12,7 +12,7 @@ export default function Footer() {
       </div>
       <div className={styles.divider}></div>
       <div className={styles.copyright}>
-        <span>© 2024 DENTNOTES ALL RIGHTS RESERVED</span>
+        <span>© 2024 DENTNOTES ALL RIGHTS RESERVED.</span>
         <span className={styles.email}>ENQUIRES@DENTNOTES.COM</span>
       </div>
     </footer>

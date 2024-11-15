@@ -1,0 +1,31 @@
+.welcome {
+    font-size: 10rem;
+    padding: 0px;
+    width: 100vw;
+    margin-top: 10vh;
+    /* margin-right: 90vw; */
+    margin-left: 8vw;
+}
+
+.title {
+    font-size: 3rem;
+    font-weight: 400;
+
+}
+
+.subtitle {
+    font-size: 1.3rem;
+    color: #808080;
+}
+
+.generate {
+    margin-top: 40px;
+    margin-right: 2vw;
+
+    width: 30vw;
+    height: 60vh;
+
+    border: 2px solid #d9d9d9;
+    border-radius: 30px;
+
+}

@@ -17,6 +17,16 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
+const instrumentSans = localFont({
+  src: "./fonts/InstrumentSans-VariableFont_wdth,wght.ttf",
+  variable: '--font-instrument-sans',
+});
+
+const itInstrumentSans = localFont({
+  src: "./fonts/InstrumentSans-Italic-VariableFont_wdth,wght.ttf",
+  variable: '--font-instrument-sans',
+});
+
 export const metadata: Metadata = {
   title: "dentnotes",
   description: "Create dental clinic notes like never before",
@@ -40,7 +50,7 @@ export const metadata: Metadata = {
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className={`${instrumentSans.variable} ${itInstrumentSans.variable}`}>
         {children}
         {/* <SidebarProvider>
           <AppSidebar />

@@ -10,7 +10,14 @@ export default function LandingPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <Link href="https://dentnotes.com" className={styles.logo}>
-          <span>dentnotes</span>
+          <Image
+            src="/dentnotes-logo.png"  // Adjust filename based on your actual image name
+            alt="molar2"
+            width={150}
+            height={50}
+            priority
+          />
+          {/* <span>dentnotes</span> */}
         </Link>
         <nav className={styles.nav}>
           <Link href="https://dentnotes.com" className={styles.navLink}>
@@ -31,7 +38,7 @@ export default function LandingPage() {
             <p className={styles.subtitle}>
               Forget manually typing your clinic notes, generate notes in seconds
             </p>
-            <Link href="https://dentnotes.com" className={`${styles.button} ${styles.heroButton}`}>
+            <Link href="/dashboard" className={`${styles.button} ${styles.heroButton}`}>
               <Zap className={styles.buttonIcon} />
               Start clinics better
             </Link>

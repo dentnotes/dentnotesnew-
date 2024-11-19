@@ -33,6 +33,7 @@ import { render } from 'react-dom';
 interface AppSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  onComponentSelect: (component: string) => void;
 }
 
 interface Item { 
@@ -41,7 +42,7 @@ interface Item {
   icon: React.ElementType; 
 }
 
-export function AppSidebar({ isOpen, onToggle }: AppSidebarProps) {
+export function AppSidebar({ isOpen, onToggle, onComponentSelect }: AppSidebarProps) {
   const [groupContent, setGroupContent] = useState<string[]>([]); 
   const [items, setItems] = useState<Item[]>([]);
   const [activeComponent, setActiveComponent] = useState<string | null>(null)
@@ -51,17 +52,6 @@ export function AppSidebar({ isOpen, onToggle }: AppSidebarProps) {
     setGroupContent([...groupContent, newContent]); 
     setItems([...items, { title: newContent, url: "#", icon: Inbox }]); 
   };
-
-  const renderComponent = () => { 
-    switch (activeComponent) { 
-      case 'account': 
-        return <Account /> 
-      case 'billing': 
-        return <Billing /> 
-      default: 
-        return null 
-    } 
-  }
   
   return (
     <SidebarProvider>
@@ -110,10 +100,10 @@ export function AppSidebar({ isOpen, onToggle }: AppSidebarProps) {
                     side="top"
                     className="w-[--radix-popper-anchor-width]"
                   >
-                    <DropdownMenuItem onClick={() => setActiveComponent('account')}>
+                    <DropdownMenuItem onClick={() => onComponentSelect('account')}>
                       <span>Account</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setActiveComponent('billing')}>
+                    <DropdownMenuItem onClick={() => onComponentSelect('billing')}>
                       <span>Billing</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -126,7 +116,6 @@ export function AppSidebar({ isOpen, onToggle }: AppSidebarProps) {
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarFooter>
-          {renderComponent()}
           {isOpen && (
             <div className="absolute right-3 top-7">
               <SidebarTrigger onClick={onToggle} className="bg-background border rounded-full p-1.5 hover:bg-accent">

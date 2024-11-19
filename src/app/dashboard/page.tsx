@@ -10,6 +10,8 @@ import DiagnosticForm from '@/components/forms/DiagnosticForm';
 import PreventiveForm from '@/components/forms/PreventiveForm';
 import PsrScores from '@/components/guides/PsrScores';
 // etc...
+import Account from '@/components/sidebar-footer/account';
+import Billing from '@/components/sidebar-footer/billing';
 
 export default function Dashboard() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
@@ -39,8 +41,16 @@ export default function Dashboard() {
     { id: 'denture', label: 'Denture Guides' },
   ];
 
+  const handleComponentSelect = (component: string) => {
+    setActiveComponent(component);
+  };
+
   const renderComponent = () => {
     switch (activeComponent) {
+      case 'account':
+        return <Account />;
+      case 'billing':
+        return <Billing />;
       case 'diagnostic':
         return <DiagnosticForm />;
       case 'preventive':
@@ -58,6 +68,7 @@ export default function Dashboard() {
       <AppSidebar 
         isOpen={isOpen} 
         onToggle={() => setIsOpen(!isOpen)}
+        onComponentSelect={handleComponentSelect}
       />
       <main className={`flex-1 transition-all duration-300 ${isOpen ? 'ml-0' : 'ml-0'}`}>
         {!activeComponent ? (

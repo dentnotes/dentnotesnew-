@@ -1,5 +1,6 @@
 "use client";
 import { useState } from 'react'
+import Link from 'next/link'
 import { ChevronRight, ChevronDown, ChevronUp, Plus, Inbox, User2 } from "lucide-react";
 import styles from './app-sidebar.module.css';
 import {
@@ -18,12 +19,16 @@ import {
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
+import Account from '@/components/sidebar-footer/account';
+import Billing from '@/components/sidebar-footer/billing';
+
 import {
     DropdownMenu,
     DropdownMenuTrigger,
     DropdownMenuContent,
     DropdownMenuItem
 } from "@/components/ui/dropdown-menu";
+import { render } from 'react-dom';
 
 interface AppSidebarProps {
   isOpen: boolean;
@@ -39,12 +44,24 @@ interface Item {
 export function AppSidebar({ isOpen, onToggle }: AppSidebarProps) {
   const [groupContent, setGroupContent] = useState<string[]>([]); 
   const [items, setItems] = useState<Item[]>([]);
+  const [activeComponent, setActiveComponent] = useState<string | null>(null)
 
   const addNewClinic = () => { 
     const newContent = "New Clinic Content"; 
     setGroupContent([...groupContent, newContent]); 
     setItems([...items, { title: newContent, url: "#", icon: Inbox }]); 
   };
+
+  const renderComponent = () => { 
+    switch (activeComponent) { 
+      case 'account': 
+        return <Account /> 
+      case 'billing': 
+        return <Billing /> 
+      default: 
+        return null 
+    } 
+  }
   
   return (
     <SidebarProvider>
@@ -93,20 +110,23 @@ export function AppSidebar({ isOpen, onToggle }: AppSidebarProps) {
                     side="top"
                     className="w-[--radix-popper-anchor-width]"
                   >
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setActiveComponent('account')}>
                       <span>Account</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setActiveComponent('billing')}>
                       <span>Billing</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <span>Sign out</span>
+                    <DropdownMenuItem asChild>
+                      <Link href="/">
+                        <span>Sign out</span>
+                      </Link>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarFooter>
+          {renderComponent()}
           {isOpen && (
             <div className="absolute right-3 top-7">
               <SidebarTrigger onClick={onToggle} className="bg-background border rounded-full p-1.5 hover:bg-accent">

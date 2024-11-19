@@ -8,6 +8,7 @@ import styles from './page.module.css';
 // Example:
 import DiagnosticForm from '@/components/forms/DiagnosticForm';
 import PreventiveForm from '@/components/forms/PreventiveForm';
+import PsrScores from '@/components/guides/PsrScores';
 // etc...
 
 export default function Dashboard() {
@@ -44,6 +45,8 @@ export default function Dashboard() {
         return <DiagnosticForm />;
       case 'preventive':
         return <PreventiveForm />;
+      case 'psr-scores':
+        return <PsrScores />;
       // Add cases for all other components
       default:
         return null;

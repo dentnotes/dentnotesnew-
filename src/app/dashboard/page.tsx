@@ -98,7 +98,7 @@ export default function Dashboard() {
           <div className="p-8">
             <button
               onClick={() => setActiveComponent(null)}
-              className="mb-4 px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 transition-colors flex items-center"
+              className="mb-4 px-4 py-2 rounded hover:bg-gray-50 transition-colors flex items-center"
             >
               <ChevronRight size={16} className="rotate-180 mr-2" />
               Back to Dashboard

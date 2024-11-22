@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -12,10 +12,14 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
+import { Copy } from "lucide-react" // Make sure you have lucide-react installed
+
+
 
 
 
 export default function DiagnosticForm() {
+  const [editableOutput, setEditableOutput] = useState('')
   const [formData, setFormData] = useState({
     year: '',
     department: '',
@@ -28,6 +32,23 @@ export default function DiagnosticForm() {
     generalWaitlist: false,
     other: ''
   })
+
+  const handleCopy = () => {
+    const output = generateOutput()
+    navigator.clipboard.writeText(output)
+      .then(() => {
+        // You could add a toast notification here if you want
+        console.log('Copied to clipboard')
+      })
+      .catch((err) => {
+        console.error('Failed to copy text: ', err)
+      })
+  }
+
+  // Add handler for editable output changes
+  const handleOutputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditableOutput(e.target.value)
+  }
 
   const handleChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -67,6 +88,11 @@ export default function DiagnosticForm() {
     return output
   }
   
+  useEffect(() => {
+    setEditableOutput(generateOutput())
+  }, [formData]) // This will run whenever formData changes
+
+
   return (
     <div className={styles.welcome}>
       <div className={styles.generate}>
@@ -211,11 +237,35 @@ export default function DiagnosticForm() {
           </div>
         </div>
         <div className={styles.box}>
-          <h2 className="text-xl mb-4">Generated Output</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl">Generated Output</h2>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleCopy}
+              className="h-8 w-8"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
           <div className="space-y-2">
             <div className="output-container">
-              {/* <h2 className="output-title">Generated Output</h2> */}
-              <pre className="output">{generateOutput()}</pre>
+              <Textarea
+                value={editableOutput}
+                onChange={handleOutputChange}
+                className="min-h-[688px] font-mono text-sm whitespace-pre-wrap"
+                onKeyDown={(e) => {
+                  if (e.key === 'Tab') {
+                    e.preventDefault()
+                    const start = e.currentTarget.selectionStart
+                    const end = e.currentTarget.selectionEnd
+                    const value = e.currentTarget.value
+                    e.currentTarget.value = value.substring(0, start) + '    ' + value.substring(end)
+                    e.currentTarget.selectionStart = e.currentTarget.selectionEnd = start + 4
+                    handleOutputChange(e as any)
+                  }
+                }}
+              />
             </div>
           </div>
         </div>

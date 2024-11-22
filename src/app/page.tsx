@@ -23,7 +23,7 @@ export default function LandingPage() {
           <Link href="https://dentnotes.com" className={styles.navLink}>
             contact us
           </Link>
-          <Link href="https://dentnotes.com" className={`${styles.button} ${styles.navButton}`}>
+          <Link href="/auth" className={`${styles.button} ${styles.navButton}`}>
             get started
           </Link>
         </nav>

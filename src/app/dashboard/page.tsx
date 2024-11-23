@@ -3,6 +3,9 @@ import { useState } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ChevronRight } from "lucide-react";
 import styles from './page.module.css';
+import { useUser } from '@supabase/auth-helpers-react';
+import { notesService } from '@/lib/supabase/notes';
+
 
 // Import your components for each section (create these separately)
 // Example:
@@ -16,6 +19,31 @@ import Billing from '@/components/sidebar-footer/billing';
 export default function Dashboard() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const [activeComponent, setActiveComponent] = useState<string | null>(null);
+  const user = useUser();
+  const [refreshKey, setRefreshKey] = useState(0); // Add this line
+
+  const refreshNotes = () => {
+    setRefreshKey(prev => prev + 1); // Add this function
+  };
+
+  const handleGenerateNote = async (type: string, label: string) => {
+    if (!user) return;
+
+    const newNote = {
+      user_id: user.id,
+      title: label,
+      content: '',
+      type: type as any
+    };
+
+    const createdNote = await notesService.createNote(newNote);
+    if (createdNote) {
+      setActiveComponent(type);
+      refreshNotes();
+      // You might want to emit an event or use a context to update the sidebar
+      // For now, you can pass a callback prop to AppSidebar to refresh notes
+    }
+  };
 
   const generateNotesItems = [
     { id: 'diagnostic', label: 'Diagnostic' },
@@ -69,6 +97,7 @@ export default function Dashboard() {
         isOpen={isOpen} 
         onToggle={() => setIsOpen(!isOpen)}
         onComponentSelect={handleComponentSelect}
+        onNotesChange={refreshNotes}
       />
       <main className={`flex-1 transition-all duration-300 ${isOpen ? 'ml-0' : 'ml-0'}`}>
         {!activeComponent ? (
@@ -82,7 +111,7 @@ export default function Dashboard() {
                   {generateNotesItems.map((item) => (
                     <button
                       key={item.id}
-                      onClick={() => setActiveComponent(item.id)}
+                      onClick={() => handleGenerateNote(item.id, item.label)}
                       className={styles.listButton}
                     >
                       <ChevronRight size={20} />

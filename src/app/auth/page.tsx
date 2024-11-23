@@ -101,6 +101,18 @@ export default function AuthPage() {
   
     setIsLoading(true)
     try {
+      // Log the data being sent to verify it's complete
+      console.log('Sending sign-up data:', {
+        email: signUpData.email,
+        password: signUpData.password,
+        metadata: {
+          name: signUpData.name,
+          university: signUpData.university,
+          year: signUpData.year,
+          program: signUpData.program,
+        }
+      })
+  
       const response = await fetch('/api/auth', {
         method: 'POST',
         headers: {
@@ -121,17 +133,20 @@ export default function AuthPage() {
   
       const { data, error } = await response.json()
       if (error) {
+        console.error('Sign-up error:', error)
         setError(error)
       } else if (data.user) {
+        console.log('Sign-up successful:', data)
         router.push('/dashboard')
         router.refresh()
       }
     } catch (error) {
+      console.error('Sign-up error:', error)
       setError('An error occurred during sign up')
     }
     setIsLoading(false)
   }
-
+  
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)

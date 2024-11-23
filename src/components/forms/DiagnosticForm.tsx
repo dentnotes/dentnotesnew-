@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -14,14 +15,17 @@ import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Copy } from "lucide-react" // Make sure you have lucide-react installed
 
-
+import { createClient } from '@/lib/supabase/client'
 
 
 
 export default function DiagnosticForm() {
+  const supabase = createClient()
+
+  const [userYear, setUserYear] = useState<string>('')
+  const [isLoading, setIsLoading] = useState(true)
   const [editableOutput, setEditableOutput] = useState('')
   const [formData, setFormData] = useState({
-    year: '',
     department: '',
     clinic: '',
     appointmentType: '',
@@ -32,6 +36,49 @@ export default function DiagnosticForm() {
     generalWaitlist: false,
     other: ''
   })
+
+  useEffect(() => {
+    async function getUserYear() {
+      const { data: { user } } = await supabase.auth.getUser()
+      console.log('Auth user:', user) // Debug log
+      
+      if (user) {
+        console.log('User ID:', user.id) // Debug log
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('year')
+          .eq('id', user.id)
+          .single()
+  
+        console.log('Profile data:', profile) // Debug log
+        console.log('Profile error:', error) // Debug log
+  
+        if (error) {
+          console.error('Error fetching user year:', error.message)
+          return
+        }
+  
+        if (profile?.year) {
+          setUserYear(profile.year)
+        }
+      }
+      setIsLoading(false)
+    }
+  
+    getUserYear()
+  }, [supabase])
+  
+  useEffect(() => {
+    setEditableOutput(generateOutput())
+  }, [formData]) // This will run whenever formData changes
+
+  const handleChange = (field: string, value: string | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleOutputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditableOutput(e.target.value)
+  }
 
   const handleCopy = () => {
     const output = generateOutput()
@@ -45,17 +92,13 @@ export default function DiagnosticForm() {
       })
   }
 
-  // Add handler for editable output changes
-  const handleOutputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setEditableOutput(e.target.value)
-  }
-
-  const handleChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+  // Modify handleChange to work with department tabs
+  const handleDepartmentChange = (value: string) => {
+    setFormData(prev => ({ ...prev, department: value }))
   }
 
   const generateOutput = () => {
-    let output = `Pt. presented to ${formData.year} Year ${formData.department} Clinic ${formData.clinic} for\n${formData.appointmentType}\n`
+    let output = `Pt. presented to Year ${userYear} ${formData.department} Clinic ${formData.clinic} for\n${formData.appointmentType}\n`
     output += "3C's confirmed."
     if (formData.colgateRinse) {
       output += " Colgate 1.5% Hydrogen Peroxide Mouth rinse given.\n"
@@ -88,10 +131,9 @@ export default function DiagnosticForm() {
     return output
   }
   
-  useEffect(() => {
-    setEditableOutput(generateOutput())
-  }, [formData]) // This will run whenever formData changes
-
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
 
   return (
     <div className={styles.welcome}>
@@ -104,7 +146,7 @@ export default function DiagnosticForm() {
                 {/* <h2 className="form-title">Dental Clinic Form</h2> */}
                 {/* <form className="form"> */}
                 <form className="space-y-3">
-                  {/* <div className="form-group"> */}
+                  {/* <div className="form-group">
                   <div className="space-y-1">
                     <Label>Year</Label>
                     <Select onValueChange={(value) => handleChange('year', value)}>
@@ -118,23 +160,24 @@ export default function DiagnosticForm() {
                       </SelectContent>
                     </Select> 
                   </div>
-                  
+                   */}
                   {/* <div className="form-group"> */}
                   <div className="space-y-1">
                     <Label>Department</Label>
-                    <Select onValueChange={(value) => handleChange('department', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="GDP">GDP</SelectItem>
-                        <SelectItem value="Pros">Pros</SelectItem>
-                        <SelectItem value="Endo">Endo</SelectItem>
-                        <SelectItem value="Perio">Perio</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Tabs
+                      defaultValue="GDP"
+                      value={formData.department || 'GDP'}
+                      onValueChange={handleDepartmentChange}
+                      className="w-full"
+                    >
+                      <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="GDP">GDP</TabsTrigger>
+                        <TabsTrigger value="Pros">Pros</TabsTrigger>
+                        <TabsTrigger value="Endo">Endo</TabsTrigger>
+                        <TabsTrigger value="Perio">Perio</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
                   </div>
-
                   {/* <div className="form-group"> */}
                   <div className="space-y-1">
                     <Label>Clinic</Label>

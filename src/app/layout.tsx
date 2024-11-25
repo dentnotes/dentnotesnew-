@@ -2,10 +2,6 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
-
-import { createClient } from '@/lib/supabase/client'
-import { createBrowserClient } from '@supabase/ssr'
-
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -48,10 +44,6 @@ export const metadata: Metadata = {
 
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
 
   return (
     <html lang="en">

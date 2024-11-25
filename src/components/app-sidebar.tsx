@@ -1,12 +1,16 @@
 "use client";
+
 import { useState, useEffect } from 'react'
-import { notesService } from '@/lib/supabase/notes-client';
-import type { Note } from '@/types/notes';
-import Link from 'next/link'
 import { ChevronRight, ChevronDown, ChevronUp, Plus, Inbox, User2, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
+import { useRouter } from 'next/navigation'
 import { Button } from './ui/button';
 import styles from './app-sidebar.module.css';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import Link from 'next/link'
+import Account from '@/components/sidebar-footer/account';
+import Billing from '@/components/sidebar-footer/billing';
+
 import {
     Sidebar,
     SidebarContent,
@@ -21,12 +25,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem
 } from "@/components/ui/sidebar";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
-import Account from '@/components/sidebar-footer/account';
-import Billing from '@/components/sidebar-footer/billing';
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -34,7 +33,6 @@ import {
     DropdownMenuItem
 } from "@/components/ui/dropdown-menu";
 import { render } from 'react-dom';
-import { createNote } from '@/app/notes/actions'
 
 
 interface AppSidebarProps {
@@ -55,67 +53,25 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
   const [groupContent, setGroupContent] = useState<string[]>([]); 
   const [activeComponent, setActiveComponent] = useState<string | null>(null)
   
-  const [notes, setNotes] = useState<Note[]>([]);
+  // const [notes, setNotes] = useState<Note[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null)
-  const supabase = createClient()
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      console.log('Current user:', user)
-      setUser(user)
-    }
-
-    getUser()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [supabase])
 
   const loadNotes = async () => {
-    if (user) {
-      const userNotes = await notesService.getNotesByUserId(user.id);
-      setNotes(userNotes);
-    }
+    // TODO: Implement load notes
   };
 
   const router = useRouter()
 
   const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    // TODO: Implement sign out
     router.push('/')
-    console.log('Signed out')
   }
 
   const handleCreateNote = async () => {
-    if (!user) {
-      console.log('Client: No user found')
-      return
-    }
-    
-    try {
-      const result = await notesService.createNote(user.id)
-      
-      if (result.error) {
-        console.error('Client: Error creating note:', result.error)
-        return
-      }
-  
-      if (result.data) {
-        console.log('Client: Note created, updating UI with:', result.data)
-        setNotes(prevNotes => [result.data!, ...prevNotes])
-        onNotesChange?.()
-      }
-    } catch (error) {
-      console.error('Client: Unexpected error creating note:', error)
-    }
+    // TODO: Implement create note
   }
   
   useEffect(() => {
@@ -129,30 +85,16 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
   };
   
   const handleRename = async (noteId: string, newTitle: string) => {
-    const success = await notesService.updateNoteTitle(noteId, newTitle);
-    if (success) {
-      const updatedNotes = notes.map(note => 
-        note.id === noteId ? { ...note, title: newTitle } : note
-      );
-      setNotes(updatedNotes);
-    }
-    setEditingIndex(null);
+    // TODO: Implement rename note
   };
   
   const handleDeleteClick = (index: number) => {
-    setNoteToDelete(notes[index].id);
+    // setNoteToDelete(notes[index].id);
     setIsDeleteDialogOpen(true);
   };
   
   const confirmDelete = async () => {
-    if (noteToDelete) {
-      const success = await notesService.deleteNote(noteToDelete);
-      if (success) {
-        setNotes(notes.filter(note => note.id !== noteToDelete));
-      }
-      setIsDeleteDialogOpen(false);
-      setNoteToDelete(null);
-    }
+    // TODO: Implement delete note
   };
   
   useEffect(() => {
@@ -177,7 +119,7 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
               </SidebarGroupAction>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {notes.map((note, index) => (
+                  {/* {notes.map((note, index) => (
                     <div key={note.id} className="group relative">
                       <SidebarMenuItem
                         // icon={note.icon}
@@ -213,7 +155,7 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     </div>
-                  ))}
+                  ))} */}
 
                   <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                     <DialogContent>

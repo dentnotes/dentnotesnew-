@@ -4,8 +4,6 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { ChevronRight } from "lucide-react";
 import styles from './page.module.css';
 import { useUser } from '@supabase/auth-helpers-react';
-import { notesService } from '@/lib/supabase/notes';
-import { createClient } from '@/lib/supabase/client'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { useRouter } from 'next/navigation'
@@ -48,22 +46,7 @@ export default function Dashboard() {
   };
 
   const handleGenerateNote = async (type: string, label: string) => {
-    if (!user) return;
-
-    const newNote = {
-      user_id: user.id,
-      title: label,
-      content: '',
-      type: type
-    };
-
-    const createdNote = await notesService.createNote(JSON.stringify(newNote));
-    if (createdNote) {
-      setActiveComponent(type);
-      refreshNotes();
-      // You might want to emit an event or use a context to update the sidebar
-      // For now, you can pass a callback prop to AppSidebar to refresh notes
-    }
+    // TODO: Implement generate note
   };
 
   const generateNotesItems = [
@@ -111,12 +94,6 @@ export default function Dashboard() {
         return null;
     }
   };
-
-  const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/')
-  }
 
   return (
     <div className="flex min-h-screen">

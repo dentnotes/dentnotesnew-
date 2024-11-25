@@ -15,13 +15,10 @@ import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Copy } from "lucide-react" // Make sure you have lucide-react installed
 
-import { createClient } from '@/lib/supabase/client'
 
 
 
 export default function DiagnosticForm() {
-  const supabase = createClient()
-
   const [userYear, setUserYear] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [editableOutput, setEditableOutput] = useState('')
@@ -37,37 +34,7 @@ export default function DiagnosticForm() {
     other: ''
   })
 
-  useEffect(() => {
-    async function getUserYear() {
-      const { data: { user } } = await supabase.auth.getUser()
-      console.log('Auth user:', user) // Debug log
-      
-      if (user) {
-        console.log('User ID:', user.id) // Debug log
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('year')
-          .eq('id', user.id)
-          .single()
-  
-        console.log('Profile data:', profile) // Debug log
-        console.log('Profile error:', error) // Debug log
-  
-        if (error) {
-          console.error('Error fetching user year:', error.message)
-          return
-        }
-  
-        if (profile?.year) {
-          setUserYear(profile.year)
-        }
-      }
-      setIsLoading(false)
-    }
-  
-    getUserYear()
-  }, [supabase])
-  
+
   useEffect(() => {
     setEditableOutput(generateOutput())
   }, [formData]) // This will run whenever formData changes

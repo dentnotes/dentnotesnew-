@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ChevronRight } from "lucide-react";
 import styles from './page.module.css';
-import { useUser } from '@supabase/auth-helpers-react';
+// import { useUser } from '@supabase/auth-helpers-react';
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { useRouter } from 'next/navigation'
@@ -27,19 +27,19 @@ interface Note {
 export default function Dashboard() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const [activeComponent, setActiveComponent] = useState<string | null>(null);
-  const user = useUser();
+  // const user = useUser();
   const [refreshKey, setRefreshKey] = useState(0); // Add this line
   const router = useRouter()
 
-  useEffect(() => {
-    if (!user) {
-      router.push('/auth')
-    }
-  }, [user, router])
+  // useEffect(() => {
+  //   if (!user) {
+  //     router.push('/auth')
+  //   }
+  // }, [user, router])
 
-  if (!user) {
-    return <div>Loading...</div>
-  }
+  // if (!user) {
+  //   return <div>Loading...</div>
+  // }
 
   const refreshNotes = () => {
     setRefreshKey(prev => prev + 1); // Add this function

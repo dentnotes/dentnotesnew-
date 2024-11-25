@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useRouter } from 'next/navigation'
 import { Button } from './ui/button';
 import styles from './app-sidebar.module.css';
+import { signOut } from '@/app/auth/actions'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import Link from 'next/link'
 import Account from '@/components/sidebar-footer/account';
@@ -66,7 +67,12 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
   const router = useRouter()
 
   const handleSignOut = async () => {
-    // TODO: Implement sign out
+    const result = await signOut()
+    if (result.error) {
+      console.error('Error signing out:', result.error)
+    } else {
+      router.push('/auth')
+    }
     router.push('/')
   }
 

@@ -15,12 +15,12 @@ import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Copy } from "lucide-react" // Make sure you have lucide-react installed
 
+import { supabase } from '@/lib/supabase';
 
 
-
-export default function DiagnosticForm() {
+export default function DiagnosticForm({ noteId }: { noteId: string }) {
   const [userYear, setUserYear] = useState<string>('')
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [editableOutput, setEditableOutput] = useState('')
   const [formData, setFormData] = useState({
     department: '',
@@ -34,6 +34,54 @@ export default function DiagnosticForm() {
     other: ''
   })
 
+  // Fetch existing note data when the component mounts
+  useEffect(() => {
+    const fetchNote = async () => {
+      const { data, error } = await supabase
+        .from('notes')
+        .select('*')
+        .eq('id', noteId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching note:', error);
+      } else if (data) {
+        setFormData({
+          department: data.department || '',
+          clinic: data.clinic || '',
+          appointmentType: data.appointmentType || '',
+          colgateRinse: data.colgateRinse || false,
+          medicalHx: data.medicalHx || 'updated',
+          supervisor: data.supervisor || '',
+          nv: data.nv || '',
+          generalWaitlist: data.generalWaitlist || false,
+          other: data.other || ''
+        });
+      }
+    };
+
+    fetchNote();
+  }, [noteId]);
+
+  // Update the database whenever formData changes
+  useEffect(() => {
+    const updateNote = async () => {
+      const { error } = await supabase
+        .from('notes')
+        .update({
+          ...formData,
+          type: 'Diagnostic' // Ensure the type is set correctly
+        })
+        .eq('id', noteId);
+
+      if (error) {
+        console.error('Error updating note:', error);
+      }
+    };
+
+    // Call the update function if formData changes
+    updateNote();
+  }, [formData, noteId]);
 
   useEffect(() => {
     setEditableOutput(generateOutput())
@@ -113,22 +161,6 @@ export default function DiagnosticForm() {
                 {/* <h2 className="form-title">Dental Clinic Form</h2> */}
                 {/* <form className="form"> */}
                 <form className="space-y-3">
-                  {/* <div className="form-group">
-                  <div className="space-y-1">
-                    <Label>Year</Label>
-                    <Select onValueChange={(value) => handleChange('year', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select year" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="3rd">3rd</SelectItem>
-                        <SelectItem value="4th">4th</SelectItem>
-                        <SelectItem value="5th">5th</SelectItem>
-                      </SelectContent>
-                    </Select> 
-                  </div>
-                   */}
-                  {/* <div className="form-group"> */}
                   <div className="space-y-1">
                     <Label>Department</Label>
                     <Tabs
@@ -283,26 +315,3 @@ export default function DiagnosticForm() {
     </div>
   )
 }
-
-
-// return (
-//   <div className={styles.welcome}>
-//     <h1 className={styles.title}>Diagnostic</h1>
-//     <div className={styles.generate}>
-//       <div className={styles.box}>
-//         <h2 className="text-xl mb-4">Comprehensive Oral Examination</h2>
-//         <div className="space-y-2">
-
-//         </div>
-//       </div>
-//       <div className={styles.box}>
-//         <h2 className="text-xl mb-4">Output</h2>
-//         <div className="space-y-2">
-          
-//         </div>
-//       </div>
-//     </div>
-//   </div>
-// );
-// }
-

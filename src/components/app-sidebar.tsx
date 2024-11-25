@@ -12,6 +12,7 @@ import Link from 'next/link'
 import Account from '@/components/sidebar-footer/account';
 import Billing from '@/components/sidebar-footer/billing';
 
+
 import {
     Sidebar,
     SidebarContent,
@@ -41,6 +42,7 @@ interface AppSidebarProps {
   onToggle: () => void;
   onComponentSelect: (component: string) => void;
   onNotesChange?: () => void;  // Add this line
+  passNoteId: (noteId: string) => void;
 }
 
 // interface Note {
@@ -50,7 +52,14 @@ interface AppSidebarProps {
 //   icon: any;
 // }
 
-export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange }: AppSidebarProps) {
+import { supabase } from '@/lib/supabase'
+import { redirect } from 'next/navigation'
+import { createNote, getUserNotes } from '@/app/actions/notes'
+import { handleCreateNote } from '@/app/actions/notes'; // Adjust the import path as necessary
+import { fetchSessionAndNotes } from '@/app/actions/session';
+
+
+export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange, passNoteId }: AppSidebarProps) {
   const [groupContent, setGroupContent] = useState<string[]>([]); 
   const [activeComponent, setActiveComponent] = useState<string | null>(null)
   
@@ -58,7 +67,31 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null)
+
+  const [user, setUser] = useState<any>(null);
+  const [notes, setNotes] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadSessionAndNotes = async () => {
+      const { session, notes: userNotes } = await fetchSessionAndNotes();
+      
+      if (!session) {
+        redirect('/auth');
+      } else {
+        setUser(session.user);
+        setNotes(userNotes);
+      }
+    };
+
+    loadSessionAndNotes();
+  }, []);
+
+  async function onCreateNote() {
+    await handleCreateNote();
+  }
+  // const handleCreateNote = async () => {
+  //   // TODO: Implement create note
+  // }
 
   const loadNotes = async () => {
     // TODO: Implement load notes
@@ -76,9 +109,25 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
     router.push('/')
   }
 
-  const handleCreateNote = async () => {
-    // TODO: Implement create note
-  }
+  // const handleNoteClick = (noteType: string) => {
+  //   switch (noteType) {
+  //     case 'Diagnostic':
+  //       router.push('diagnostic-form'); // Adjust the path as necessary
+  //       break;
+  //     case 'Preventive':
+  //       router.push('/preventive-form'); // Adjust the path as necessary
+  //       break;
+  //     // Add more cases for other note types
+  //     default:
+  //       console.warn('Unknown note type:', noteType);
+  //   }
+  // };
+
+  const handleNoteClick = (note: any) => {
+    console.log('Note clicked:', note); // Debugging line
+    onComponentSelect(note.type); // Pass both type and id
+    passNoteId(note.id);
+  };  
   
   useEffect(() => {
     if (user) {
@@ -116,7 +165,7 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
           <div className={styles.dentnotesTitle}> 
             dentnotes 
           </div>
-          <button onClick={handleCreateNote} className={styles.newClinicBtn} > new clinic + </button>
+          <button onClick={onCreateNote} className={styles.newClinicBtn} > new clinic + </button>
           <div style={{ marginTop: '20px', marginLeft: '10px'}}>
             <SidebarGroup>
               <SidebarGroupLabel>Clinic Notes</SidebarGroupLabel>
@@ -125,8 +174,8 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
               </SidebarGroupAction>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {/* {notes.map((note, index) => (
-                    <div key={note.id} className="group relative">
+                  {notes.map((note, index) => (
+                    <div key={note.id} className="group relative" onClick={() => handleNoteClick(note)}>
                       <SidebarMenuItem
                         // icon={note.icon}
                         onDoubleClick={() => handleDoubleClick(index)}
@@ -149,7 +198,7 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
                           ) : (
                             <span className="block truncate">{note.title}</span>
                           )}
-                          <button
+                          <span
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteClick(index);
@@ -157,11 +206,11 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
                             className="absolute right-2 hidden group-hover:inline-flex items-center justify-center p-1 rounded hover:bg-red-100 dark:hover:bg-red-900"
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
-                          </button>
+                          </span>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     </div>
-                  ))} */}
+                  ))}
 
                   <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                     <DialogContent>

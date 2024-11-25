@@ -17,14 +17,27 @@ import PsrScores from '@/components/guides/PsrScores';
 import Account from '@/components/sidebar-footer/account';
 import Billing from '@/components/sidebar-footer/billing';
 
-interface Note {
-  user_id: string;
-  title: string;
-  content: string;
-  type: string;
-}
+import { supabase } from '@/lib/supabase'
+import { redirect } from 'next/navigation'
+import { createNote, getUserNotes } from '@/app/actions/notes'
 
 export default function Dashboard() {
+  // useEffect(() => {
+  //   const fetchSession = async () => {
+  //     const { data: { session } } = await supabase.auth.getSession();
+  //     if (!session) {
+  //       router.push('/auth');
+  //     } else {
+  //       // TODO: Implement session
+  //     }
+  //   };
+
+  //   fetchSession();
+  // }, []);
+
+
+
+
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const [activeComponent, setActiveComponent] = useState<string | null>(null);
   // const user = useUser();
@@ -73,9 +86,28 @@ export default function Dashboard() {
     { id: 'denture', label: 'Denture Guides' },
   ];
 
-  const handleComponentSelect = (component: string) => {
-    setActiveComponent(component);
+  // const handleComponentSelect = (component: string) => {
+  //   setActiveComponent(component);
+  // };
+
+  const handleNoteClick = (noteType: string, noteId: string) => {
+    switch (noteType) {
+      case 'Diagnostic':
+        setActiveComponent('diagnostic');
+        setCurrentNoteId(noteId); // Set the current note ID
+        break;
+      case 'Preventive':
+        setActiveComponent('preventive');
+        setCurrentNoteId(noteId); // Set the current note ID
+        break;
+      // Add more cases for other note types
+      default:
+        console.warn('Unknown note type:', noteType);
+    }
   };
+
+  const [currentNoteId, setCurrentNoteId] = useState<string | null>(null);
+
 
   const renderComponent = () => {
     switch (activeComponent) {
@@ -84,7 +116,7 @@ export default function Dashboard() {
       case 'billing':
         return <Billing />;
       case 'diagnostic':
-        return <DiagnosticForm />;
+        return <DiagnosticForm noteId={currentNoteId || ''} />;
       case 'preventive':
         return <PreventiveForm />;
       case 'psr-scores':
@@ -100,7 +132,8 @@ export default function Dashboard() {
       <AppSidebar 
         isOpen={isOpen} 
         onToggle={() => setIsOpen(!isOpen)}
-        onComponentSelect={handleComponentSelect}
+        onComponentSelect={(component: string) => handleNoteClick(component, '')}
+        passNoteId={(noteId: string) => setCurrentNoteId(noteId)}
         onNotesChange={refreshNotes}
       />
       <main className={`flex-1 transition-all duration-300 ${isOpen ? 'ml-0' : 'ml-0'}`}>

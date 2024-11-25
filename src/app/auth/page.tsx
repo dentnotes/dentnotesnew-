@@ -8,20 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-// import {
-//     Command,
-//     CommandEmpty,
-//     CommandGroup,
-//     CommandInput,
-//     CommandItem,
-// } from "@/components/ui/command"
-// import {
-//     Popover,
-//     PopoverContent,
-//     PopoverTrigger,
-// } from "@/components/ui/popover"
-// import { Check, ChevronsUpDown } from "lucide-react"
-// import { cn } from "@/lib/utils"
+
 
 import {
     Select,
@@ -30,6 +17,8 @@ import {
     SelectTrigger,
     SelectValue,
   } from "@/components/ui/select"
+
+import { signup, signin } from './actions'
 
 const universities = [
     "Charles Sturt University",
@@ -96,13 +85,13 @@ export default function AuthPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
     if (!validateSignUpForm()) return
-  
+
     setIsLoading(true)
+    setError(null)
+
     try {
-      // Log the data being sent to verify it's complete
-      console.log('Sending sign-up data:', {
+      const result = await signup({
         email: signUpData.email,
         password: signUpData.password,
         metadata: {
@@ -110,80 +99,67 @@ export default function AuthPage() {
           university: signUpData.university,
           year: signUpData.year,
           program: signUpData.program,
-        }
-      })
-  
-      const response = await fetch('/api/auth', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          action: 'sign-up',
-          email: signUpData.email,
-          password: signUpData.password,
-          metadata: {
-            name: signUpData.name,
-            university: signUpData.university,
-            year: signUpData.year,
-            program: signUpData.program,
-          }
-        })
       })
-  
-      const { data, error } = await response.json()
-      if (error) {
-        console.error('Sign-up error:', error)
-        setError(error)
-      } else if (data.user) {
-        console.log('Sign-up successful:', data)
-        router.push('/dashboard')
-        router.refresh()
+
+      if (result.error) {
+        setError(result.error)
+        return
       }
+
+      router.push('/dashboard')
     } catch (error) {
-      console.error('Sign-up error:', error)
-      setError('An error occurred during sign up')
+      setError('An unexpected error occurred')
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }
   
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
     setIsLoading(true)
-    
+    setError(null)
+    console.log('Client: Starting sign in process...')
+
     try {
-      const response = await fetch('/api/auth', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'sign-in',
-          email: signInData.email,
-          password: signInData.password,
-        })
+      const result = await signin({
+        email: signInData.email,
+        password: signInData.password,
       })
-  
-      const { data, error } = await response.json()
-      if (error) {
-        setError(error)
-      } else if (data.user) {
-        router.push('/dashboard')
-        router.refresh()
+
+      if (result.error) {
+        setError(result.error)
+        return
       }
+
+      // Get the client-side Supabase instance
+      const supabase = createClient()
+      
+      // Force a session refresh
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        setError('Failed to establish session')
+        return
+      }
+
+      console.log('Client: Session established, redirecting...')
+      router.push('/dashboard')
+      router.refresh()
     } catch (error) {
-      setError('An error occurred during sign in')
+      console.error('Client: Sign in error:', error)
+      setError('An unexpected error occurred')
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }
 
   return (
-    <div className="flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-[350px]">
         <CardHeader>
-          {/* <CardTitle>Authentication</CardTitle>
-          <CardDescription>Sign up or sign in to your account</CardDescription> */}
+          {/* <CardTitle className="text-2xl font-semibold text-center">dentnotes</CardTitle>
+          <CardDescription className="text-center">Sign up or sign in to continue</CardDescription> */}
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signup" className="w-full">

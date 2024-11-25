@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react'
-import { useUser } from '@supabase/auth-helpers-react';
-import { notesService } from '@/lib/supabase/notes';
+import { notesService } from '@/lib/supabase/notes-client';
 import type { Note } from '@/types/notes';
 import Link from 'next/link'
 import { ChevronRight, ChevronDown, ChevronUp, Plus, Inbox, User2, Trash2 } from "lucide-react";
@@ -26,7 +25,8 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/component
 
 import Account from '@/components/sidebar-footer/account';
 import Billing from '@/components/sidebar-footer/billing';
-
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -34,6 +34,8 @@ import {
     DropdownMenuItem
 } from "@/components/ui/dropdown-menu";
 import { render } from 'react-dom';
+import { createNote } from '@/app/notes/actions'
+
 
 interface AppSidebarProps {
   isOpen: boolean;
@@ -57,13 +59,24 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
-  const user = useUser();
+  const [user, setUser] = useState<any>(null)
+  const supabase = createClient()
 
-  // useEffect(() => {
-  //   if (user) {
-  //     loadNotes();
-  //   }
-  // }, [user]);
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      console.log('Current user:', user)
+      setUser(user)
+    }
+
+    getUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase])
 
   const loadNotes = async () => {
     if (user) {
@@ -72,24 +85,39 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
     }
   };
 
-  const addNewClinic = async () => {
-    if (!user) return;
+  const router = useRouter()
 
-    const currentDateTime = new Date().toISOString();
-    const newNote = {
-      user_id: user.id,
-      title: `Note created: ${new Date().toLocaleString()}`,
-      content: '',
-      type: 'clinic' as const
-    };
+  const handleSignOut = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/')
+    console.log('Signed out')
+  }
 
-    const createdNote = await notesService.createNote(newNote);
-    if (createdNote) {
-      setNotes([createdNote, ...notes]);
-      onNotesChange?.();
+  const handleCreateNote = async () => {
+    if (!user) {
+      console.log('Client: No user found')
+      return
     }
-  };
-
+    
+    try {
+      const result = await notesService.createNote(user.id)
+      
+      if (result.error) {
+        console.error('Client: Error creating note:', result.error)
+        return
+      }
+  
+      if (result.data) {
+        console.log('Client: Note created, updating UI with:', result.data)
+        setNotes(prevNotes => [result.data!, ...prevNotes])
+        onNotesChange?.()
+      }
+    } catch (error) {
+      console.error('Client: Unexpected error creating note:', error)
+    }
+  }
+  
   useEffect(() => {
     if (user) {
       loadNotes();
@@ -127,6 +155,10 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
     }
   };
   
+  useEffect(() => {
+    console.log('Client: User state changed:', user)
+  }, [user])
+
   return (
     <SidebarProvider>
       <div className="relative">
@@ -136,7 +168,7 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
           <div className={styles.dentnotesTitle}> 
             dentnotes 
           </div>
-          <button onClick={addNewClinic} className={styles.newClinicBtn} > new clinic + </button>
+          <button onClick={handleCreateNote} className={styles.newClinicBtn} > new clinic + </button>
           <div style={{ marginTop: '20px', marginLeft: '10px'}}>
             <SidebarGroup>
               <SidebarGroupLabel>Clinic Notes</SidebarGroupLabel>
@@ -237,10 +269,11 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
                     <DropdownMenuItem onClick={() => onComponentSelect('billing')}>
                       <span>Billing</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/">
-                        <span>Sign out</span>
-                      </Link>
+                    <DropdownMenuItem onSelect={(e) => {
+                      e.preventDefault()
+                      handleSignOut()
+                    }}>
+                      <span>Sign out</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

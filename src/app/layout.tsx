@@ -3,8 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 
 
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
+import { createClient } from '@/lib/supabase/client'
+import { createBrowserClient } from '@supabase/ssr'
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -48,17 +48,15 @@ export const metadata: Metadata = {
 
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
   return (
     <html lang="en">
       <body className={`${instrumentSans.variable} ${itInstrumentSans.variable}`}>
         {children}
-        {/* <SidebarProvider>
-          <AppSidebar />
-          <main>
-            <SidebarTrigger />
-            {children}
-          </main>
-        </SidebarProvider> */}
       </body>
     </html>
   )

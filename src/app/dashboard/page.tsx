@@ -1,11 +1,14 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ChevronRight } from "lucide-react";
 import styles from './page.module.css';
 import { useUser } from '@supabase/auth-helpers-react';
 import { notesService } from '@/lib/supabase/notes';
-
+import { createClient } from '@/lib/supabase/client'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { useRouter } from 'next/navigation'
 
 // Import your components for each section (create these separately)
 // Example:
@@ -16,11 +19,29 @@ import PsrScores from '@/components/guides/PsrScores';
 import Account from '@/components/sidebar-footer/account';
 import Billing from '@/components/sidebar-footer/billing';
 
+interface Note {
+  user_id: string;
+  title: string;
+  content: string;
+  type: string;
+}
+
 export default function Dashboard() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const [activeComponent, setActiveComponent] = useState<string | null>(null);
   const user = useUser();
   const [refreshKey, setRefreshKey] = useState(0); // Add this line
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!user) {
+      router.push('/auth')
+    }
+  }, [user, router])
+
+  if (!user) {
+    return <div>Loading...</div>
+  }
 
   const refreshNotes = () => {
     setRefreshKey(prev => prev + 1); // Add this function
@@ -33,10 +54,10 @@ export default function Dashboard() {
       user_id: user.id,
       title: label,
       content: '',
-      type: type as any
+      type: type
     };
 
-    const createdNote = await notesService.createNote(newNote);
+    const createdNote = await notesService.createNote(JSON.stringify(newNote));
     if (createdNote) {
       setActiveComponent(type);
       refreshNotes();
@@ -90,7 +111,13 @@ export default function Dashboard() {
         return null;
     }
   };
-  
+
+  const handleSignOut = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/')
+  }
+
   return (
     <div className="flex min-h-screen">
       <AppSidebar 

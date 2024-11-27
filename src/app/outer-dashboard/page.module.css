@@ -1,0 +1,74 @@
+.welcome {
+    font-size: 10rem;
+    padding: 0px;
+    width: 100vw;
+    margin-top: 10vh;
+    /* margin-right: 90vw; */
+    margin-left: 8vw;
+}
+
+.title {
+    font-size: 1.2rem;
+    font-weight: 400;
+}
+
+.subtitle {
+    font-size: 1.3vw;
+    color: #808080;
+}
+
+.description {
+    font-size: 0.8rem; /* Adjusted font size for CardDescription */
+    color: #808080;
+}
+
+.cardContent {
+    padding: 0.5rem; /* Adjust padding as needed */
+}
+
+.cardDate {
+    margin: 0; /* Remove margin to reduce space */
+    font-size: 0.8rem; /* Optional: Adjust font size if needed */
+}
+
+.generate {
+    margin-top: 40px;
+    margin-right: 2vw;
+    display: flex;
+    gap: 2rem;
+}
+
+.box {
+    flex: 1;
+    padding: 30px;
+    border: 2px solid #f5f2f2;
+    border-radius: 30px;
+    height: 57vh;
+    max-width: 30vw;
+}
+
+.lbox {
+    flex: 1;
+    height: 57vh;
+    max-width: 30vw;
+}
+
+.listButton {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0.3rem 1rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    color: #333;
+    font-size: 0.95rem;
+}
+  
+.listButton:hover {
+    background-color: #f4f4f4;
+}
+  
+.listButton svg {
+    margin-right: 0.75rem;
+    color: #666;
+}

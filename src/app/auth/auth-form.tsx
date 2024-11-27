@@ -45,7 +45,7 @@ export default function AuthForm() {
       } else {
         console.log('Login successful:', result)
         console.log('Redirecting to dashboard...')
-        router.push('/dashboard')
+        router.push('/outer-dashboard')
       }
     } else {
       result = await signup({ email, password, name, university, year, program })

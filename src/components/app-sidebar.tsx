@@ -7,11 +7,15 @@ import { useRouter } from 'next/navigation'
 import { Button } from './ui/button';
 import styles from './app-sidebar.module.css';
 import { signOut } from '@/app/auth/actions'
+import { redirect } from 'next/navigation'
+import { handleCreateNote } from '@/app/actions/notes';
+import { fetchSessionAndNotes } from '@/app/actions/session';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import Link from 'next/link'
 import Account from '@/components/sidebar-footer/account';
 import Billing from '@/components/sidebar-footer/billing';
-
+import { supabase } from '@/lib/supabase'
+import { createNote, getUserNotes } from '@/app/actions/notes'
 
 import {
     Sidebar,
@@ -45,31 +49,15 @@ interface AppSidebarProps {
   passNoteId: (noteId: string) => void;
 }
 
-// interface Note {
-//   id: string;
-//   title: string;
-//   url: string;
-//   icon: any;
-// }
-
-import { supabase } from '@/lib/supabase'
-import { redirect } from 'next/navigation'
-import { createNote, getUserNotes } from '@/app/actions/notes'
-import { handleCreateNote } from '@/app/actions/notes'; // Adjust the import path as necessary
-import { fetchSessionAndNotes } from '@/app/actions/session';
-
-
 export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange, passNoteId }: AppSidebarProps) {
-  const [groupContent, setGroupContent] = useState<string[]>([]); 
-  const [activeComponent, setActiveComponent] = useState<string | null>(null)
-  
-  // const [notes, setNotes] = useState<Note[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
-
   const [user, setUser] = useState<any>(null);
   const [notes, setNotes] = useState<any[]>([]);
+  const [groupContent, setGroupContent] = useState<string[]>([]); 
+  const [activeComponent, setActiveComponent] = useState<string | null>(null) 
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+  const router = useRouter()
 
   useEffect(() => {
     const loadSessionAndNotes = async () => {
@@ -89,15 +77,10 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange,
   async function onCreateNote() {
     await handleCreateNote();
   }
-  // const handleCreateNote = async () => {
-  //   // TODO: Implement create note
-  // }
 
   const loadNotes = async () => {
     // TODO: Implement load notes
   };
-
-  const router = useRouter()
 
   const handleSignOut = async () => {
     const result = await signOut()
@@ -109,23 +92,8 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange,
     router.push('/')
   }
 
-  // const handleNoteClick = (noteType: string) => {
-  //   switch (noteType) {
-  //     case 'Diagnostic':
-  //       router.push('diagnostic-form'); // Adjust the path as necessary
-  //       break;
-  //     case 'Preventive':
-  //       router.push('/preventive-form'); // Adjust the path as necessary
-  //       break;
-  //     // Add more cases for other note types
-  //     default:
-  //       console.warn('Unknown note type:', noteType);
-  //   }
-  // };
-
   const handleNoteClick = (note: any) => {
-    console.log('Note clicked:', note); // Debugging line
-    onComponentSelect(note.type); // Pass both type and id
+    onComponentSelect(note.type);
     passNoteId(note.id);
   };  
   
@@ -152,9 +120,9 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange,
     // TODO: Implement delete note
   };
   
-  useEffect(() => {
-    console.log('Client: User state changed:', user)
-  }, [user])
+  // useEffect(() => {
+  //   console.log('Client: User state changed:', user)
+  // }, [user])
 
   return (
     <SidebarProvider>
@@ -174,6 +142,7 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange,
               </SidebarGroupAction>
               <SidebarGroupContent>
                 <SidebarMenu>
+
                   {notes.map((note, index) => (
                     <div key={note.id} className="group relative" onClick={() => handleNoteClick(note)}>
                       <SidebarMenuItem
@@ -231,16 +200,6 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange,
                     </DialogContent>
                   </Dialog>
 
-                  {/* {items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <a href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </a>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))} */}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

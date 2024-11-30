@@ -126,8 +126,8 @@ export default function outerDashboard() {
       <main className={`flex-1 transition-all duration-300 ${isOpen ? 'ml-0' : 'ml-0'}`}>
         {!activeComponent ? (
           <div className={styles.welcome}>
-            <h1 className={styles.title}>Welcome Jed</h1>
-            <p className={styles.subtitle}>Get started by selecting the procedure you want to notetake or the guide you want to follow.</p>
+            <h1 className={styles.title}>Welcome {user?.name}</h1>
+            <p className={styles.subtitle}>Get started by creating a new note or selecting the guide you want to follow.</p>
             <div className={styles.generate}>
               <div className={styles.lbox}>
                 <h2 className="text-xl font-bold mb-4">Recently Used</h2>

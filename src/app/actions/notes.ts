@@ -101,3 +101,21 @@ export async function getUserNotes() {
   return data
 }
 
+export async function deleteNote(id: string) {
+  const { data: { session } } = await supabase.auth.getSession()
+  
+  // if (!session) {
+  //   throw new Error('Not authenticated')
+  // }
+
+  const { error } = await supabase
+    .from('notes')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  revalidatePath('/dashboard')
+}

@@ -8,7 +8,7 @@ import { Button } from './ui/button';
 import styles from './app-sidebar.module.css';
 import { signOut } from '@/app/auth/actions'
 import { redirect } from 'next/navigation'
-import { handleCreateNote } from '@/app/actions/notes';
+import { deleteNote, handleCreateNote } from '@/app/actions/notes';
 import { fetchSessionAndNotes } from '@/app/actions/session';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import Link from 'next/link'
@@ -78,10 +78,6 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange,
     await handleCreateNote();
   }
 
-  const loadNotes = async () => {
-    // TODO: Implement load notes
-  };
-
   const handleSignOut = async () => {
     const result = await signOut()
     if (result.error) {
@@ -95,13 +91,7 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange,
   const handleNoteClick = (note: any) => {
     onComponentSelect(note.type);
     passNoteId(note.id);
-  };  
-  
-  useEffect(() => {
-    if (user) {
-      loadNotes();
-    }
-  }, [user, onNotesChange]);
+  };
 
   const handleDoubleClick = (index: number) => {
     setEditingIndex(index);
@@ -112,7 +102,7 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange,
   };
   
   const handleDeleteClick = (index: number) => {
-    // setNoteToDelete(notes[index].id);
+    setNoteToDelete(notes[index].id);
     setIsDeleteDialogOpen(true);
   };
   
@@ -120,9 +110,14 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange,
     // TODO: Implement delete note
   };
   
-  // useEffect(() => {
-  //   console.log('Client: User state changed:', user)
-  // }, [user])
+  async function handleConfirmDelete() {
+    if (noteToDelete) {
+      await deleteNote(noteToDelete);
+      setIsDeleteDialogOpen(false);
+      setNoteToDelete(null);
+      setNotes((prevNotes) => prevNotes.filter(note => note.id !== noteToDelete));
+    }
+  }
 
   return (
     <SidebarProvider>
@@ -193,7 +188,7 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange,
                         <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
                           Cancel
                         </Button>
-                        <Button variant="destructive" onClick={confirmDelete}>
+                        <Button variant="destructive" onClick={handleConfirmDelete}>
                           Delete
                         </Button>
                       </DialogFooter>

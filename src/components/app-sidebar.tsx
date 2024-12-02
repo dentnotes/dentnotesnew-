@@ -8,7 +8,7 @@ import { Button } from './ui/button';
 import styles from './app-sidebar.module.css';
 import { signOut } from '@/app/auth/actions'
 import { redirect } from 'next/navigation'
-import { deleteNote, handleCreateNote } from '@/app/actions/notes';
+import { deleteNote, handleCreateNote, updateNote } from '@/app/actions/notes';
 import { fetchSessionAndNotes } from '@/app/actions/session';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import Link from 'next/link'
@@ -75,7 +75,7 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange,
   }, []);
 
   async function onCreateNote() {
-    await handleCreateNote();
+    router.push('/dashboard');
   }
 
   const handleSignOut = async () => {
@@ -98,16 +98,18 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange,
   };
   
   const handleRename = async (noteId: string, newTitle: string) => {
-    // TODO: Implement rename note
+    const note = notes.find(note => note.id === noteId);
+    if (note) {
+      await updateNote(noteId, newTitle, note.content, note.type);
+      setNotes((prevNotes) => 
+        prevNotes.map(n => n.id === noteId ? { ...n, title: newTitle } : n)
+      );
+    }
   };
   
   const handleDeleteClick = (index: number) => {
     setNoteToDelete(notes[index].id);
     setIsDeleteDialogOpen(true);
-  };
-  
-  const confirmDelete = async () => {
-    // TODO: Implement delete note
   };
   
   async function handleConfirmDelete() {

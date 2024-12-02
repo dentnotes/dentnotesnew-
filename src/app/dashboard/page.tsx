@@ -5,8 +5,8 @@ import { ChevronRight } from "lucide-react";
 import styles from './page.module.css';
 import { useRouter } from 'next/navigation'
 
-import DiagnosticForm from '@/components/forms/DiagnosticForm';
-import PreventiveForm from '@/components/forms/PreventiveForm';
+import DiagnosticForm from '@/app/forms/DiagnosticForm/page';
+import PreventiveForm from '@/app/forms/PreventiveForm';
 import PsrScores from '@/components/guides/PsrScores';
 
 import Account from '@/components/sidebar-footer/account';
@@ -14,7 +14,7 @@ import Billing from '@/components/sidebar-footer/billing';
 
 import { supabase } from '@/lib/supabase'
 import { redirect } from 'next/navigation'
-import { createNote, getUserNotes } from '@/app/actions/notes'
+import { createNote, getUserNotes, handleCreateNote } from '@/app/actions/notes'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 // import { useUser } from '@supabase/auth-helpers-react';
@@ -70,14 +70,15 @@ export default function Dashboard() {
   };
 
   const handleNoteClick = (noteType: string, noteId: string) => {
+    console.log('Note Type:', noteType, 'Note ID:', noteId);
     switch (noteType) {
       case 'Diagnostic':
         setActiveComponent('diagnostic');
-        setCurrentNoteId(noteId); // Set the current note ID
+        setCurrentNoteId(noteId);
         break;
       case 'Preventive':
         setActiveComponent('preventive');
-        setCurrentNoteId(noteId); // Set the current note ID
+        setCurrentNoteId(noteId);
         break;
       // Add more cases for other note types
       default:
@@ -89,8 +90,12 @@ export default function Dashboard() {
     setRefreshKey(prev => prev + 1); // Add this function
   };
 
-  const handleGenerateNote = async (type: string, label: string) => {
-    // TODO: Implement generate note
+  const handleGenerateNote = async (type: string) => {
+    const noteId = await createNote (type);
+    console.log('Generated Note ID:', noteId);
+    if (typeof noteId === 'string') {
+      handleNoteClick(type.charAt(0).toUpperCase() + type.slice(1), noteId);
+    }
   };
 
   return (
@@ -105,7 +110,7 @@ export default function Dashboard() {
       <main className={`flex-1 transition-all duration-300 ${isOpen ? 'ml-0' : 'ml-0'}`}>
         {!activeComponent ? (
           <div className={styles.welcome}>
-            <h1 className={styles.title}>Welcome Jed</h1>
+            <h1 className={styles.title}>Welcome</h1>
             <p className={styles.subtitle}>Get started by selecting the procedure you want to notetake or the guide you want to follow.</p>
             <div className={styles.generate}>
               <div className={styles.box}>
@@ -114,7 +119,7 @@ export default function Dashboard() {
                   {generateNotesItems.map((item) => (
                     <button
                       key={item.id}
-                      onClick={() => handleGenerateNote(item.id, item.label)}
+                      onClick={() => handleGenerateNote(item.label)}
                       className={styles.listButton}
                     >
                       <ChevronRight size={20} />

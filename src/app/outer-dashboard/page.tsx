@@ -10,8 +10,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { fetchSessionAndNotes } from "../actions/session";
 import { redirect } from 'next/navigation'
 
-import DiagnosticForm from '@/components/forms/DiagnosticForm';
-import PreventiveForm from '@/components/forms/PreventiveForm';
+import DiagnosticForm from '@/app/forms/DiagnosticForm/page';
+import PreventiveForm from '@/app/forms/PreventiveForm';
 import PsrScores from '@/components/guides/PsrScores';
 // etc...
 import Account from '@/components/sidebar-footer/account';

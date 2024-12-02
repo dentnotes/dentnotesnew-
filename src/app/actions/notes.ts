@@ -3,14 +3,13 @@
 import { supabase } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-export async function handleCreateNote() {
-    const note = await createNote();
-    redirect(`/notes?id=${note.id}`);
+export async function handleCreateNote(noteType: string) {
+    const note = await createNote(noteType);
   }
 
-export async function createNote() {
+export async function createNote(noteType: string) {
   const { data: { session } } = await supabase.auth.getSession()
-  
+  console.log('Session data:', session);
   if (!session) {
     throw new Error('Not authenticated')
   }
@@ -22,7 +21,7 @@ export async function createNote() {
         user_id: session.user.id,
         title: 'Untitled Note',
         content: '',
-        type: 'Diagnostic'
+        type: noteType
       }
     ])
     .select()
@@ -35,7 +34,7 @@ export async function createNote() {
   revalidatePath('/dashboard')
   revalidatePath('/notes')
   
-  return data
+  return data.id
 }
 
 export async function getNote(id: string) {

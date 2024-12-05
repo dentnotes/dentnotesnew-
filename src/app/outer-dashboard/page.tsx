@@ -17,12 +17,6 @@ import PsrScores from '@/components/guides/PsrScores';
 import Account from '@/components/sidebar-footer/account';
 import Billing from '@/components/sidebar-footer/billing';
 
-import { createNote, getUserNotes } from '@/app/actions/notes'
-import { supabase } from '@/lib/supabase'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-// import { useUser } from '@supabase/auth-helpers-react';
-
 
 export default function outerDashboard() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
@@ -94,10 +88,6 @@ export default function outerDashboard() {
     setRefreshKey(prev => prev + 1); // Add this function
   };
 
-  const handleGenerateNote = async (type: string, label: string) => {
-    // TODO: Implement generate note
-  };
-
   const handleNoteClick = (noteType: string, noteId: string) => {
     switch (noteType) {
       case 'Diagnostic':
@@ -116,13 +106,15 @@ export default function outerDashboard() {
 
   return (
     <div className="flex min-h-screen">
-      <AppSidebar 
-        isOpen={isOpen} 
-        onToggle={() => setIsOpen(!isOpen)}
-        onComponentSelect={(component: string) => handleNoteClick(component, '')}
-        passNoteId={(noteId: string) => setCurrentNoteId(noteId)}
-        onNotesChange={refreshNotes}
-      />
+      {!activeComponent && (
+        <AppSidebar 
+          isOpen={isOpen} 
+          onToggle={() => setIsOpen(!isOpen)}
+          onComponentSelect={(component: string) => handleNoteClick(component, '')}
+          passNoteId={(noteId: string) => setCurrentNoteId(noteId)}
+          onNotesChange={refreshNotes}
+        />
+      )}
       <main className={`flex-1 transition-all duration-300 ${isOpen ? 'ml-0' : 'ml-0'}`}>
         {!activeComponent ? (
           <div className={styles.welcome}>
@@ -162,15 +154,19 @@ export default function outerDashboard() {
             </div>
           </div>
         ) : (
-          <div className="p-8">
-            <button
-              onClick={() => setActiveComponent(null)}
-              className="mb-4 px-4 py-2 rounded hover:bg-gray-50 transition-colors flex items-center"
-            >
-              <ChevronRight size={16} className="rotate-180 mr-2" />
-              Back to Dashboard
-            </button>
-            {renderComponent()}
+          <div className="p-8 w-full">
+            <div className="mb-4">
+              <button
+                onClick={() => setActiveComponent(null)}
+                className="px-4 py-2 rounded hover:bg-gray-50 transition-colors flex items-center"
+              >
+                <ChevronRight size={16} className="rotate-180 mr-2" />
+                Back to Dashboard
+              </button>
+            </div>
+            <div className="flex gap-8 justify-center px-4">
+              {renderComponent()}
+            </div>
           </div>
         )}
       </main>

@@ -53,6 +53,8 @@ export default function Dashboard() {
 
   const renderComponent = () => {
     switch (activeComponent) {
+      case 'null':
+        return null;
       case 'account':
         return <Account />;
       case 'billing':
@@ -72,6 +74,9 @@ export default function Dashboard() {
   const handleNoteClick = (noteType: string, noteId: string) => {
     console.log('Note Type:', noteType, 'Note ID:', noteId);
     switch (noteType) {
+      case 'null':
+        setActiveComponent(null);
+        break;
       case 'Diagnostic':
         setActiveComponent('diagnostic');
         setCurrentNoteId(noteId);
@@ -100,13 +105,15 @@ export default function Dashboard() {
 
   return (
     <div className="flex min-h-screen">
-      <AppSidebar 
-        isOpen={isOpen} 
-        onToggle={() => setIsOpen(!isOpen)}
-        onComponentSelect={(component: string) => handleNoteClick(component, '')}
-        passNoteId={(noteId: string) => setCurrentNoteId(noteId)}
-        onNotesChange={refreshNotes}
-      />
+      {!activeComponent && (
+        <AppSidebar 
+          isOpen={isOpen} 
+          onToggle={() => setIsOpen(!isOpen)}
+          onComponentSelect={(component: string) => handleNoteClick(component, '')}
+          passNoteId={(noteId: string) => setCurrentNoteId(noteId)}
+          onNotesChange={refreshNotes}
+        />
+      )}
       <main className={`flex-1 transition-all duration-300 ${isOpen ? 'ml-0' : 'ml-0'}`}>
         {!activeComponent ? (
           <div className={styles.welcome}>
@@ -146,17 +153,19 @@ export default function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="p-8">
-            <button
-              onClick={() => {
-                setActiveComponent(null);
-              }}
-              className="mb-4 px-4 py-2 rounded hover:bg-gray-50 transition-colors flex items-center"
-            >
-              <ChevronRight size={16} className="rotate-180 mr-2" />
-              Back to Dashboard
-            </button>
-            {renderComponent()}
+          <div className="p-8 w-full">
+            <div className="mb-4">
+              <button
+                onClick={() => setActiveComponent(null)}
+                className="px-4 py-2 rounded hover:bg-gray-50 transition-colors flex items-center"
+              >
+                <ChevronRight size={16} className="rotate-180 mr-2" />
+                Back to Dashboard
+              </button>
+            </div>
+            <div className="flex gap-8 justify-center px-4">
+              {renderComponent()}
+            </div>
           </div>
         )}
       </main>

@@ -1,49 +1,62 @@
 .welcome {
-    /* font-size: 10rem; */
     padding: 0px;
-    width: 100vw;
-    margin-top: 6vh;   
-    /* margin-right: 90vw; */
-    margin-left: 8vw;
+    width: 100%;
+    height: 85vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .title {
-    font-size: 2vw;
+    font-size: 1.5rem;
     font-weight: 400;
+    margin-bottom: 1rem;
 }
 
 .generate {
-    margin-top: 40px;
-    margin-right: 2vw;
     display: flex;
     gap: 2rem;
+    width: 90%;
+    max-width: 1800px;
+    margin: 2rem auto;
+    justify-content: center;
 }
 
 .box {
     flex: 1;
-    padding: 30px;
+    padding: 2rem;
     border: 2px solid #f5f2f2;
-    border-radius: 30px;
-    height: 97vh;
-    max-width: 30vw;
+    border-radius: 20px;
+    background-color: white;
+    min-width: 500px;
+    max-width: 800px;
+    height: 78vh;
+    overflow-y: auto;
 }
-
 
 .container {
     display: flex;
-    height: 100vh;
+    width: 100%;
+    justify-content: center;
+    gap: 2rem;
+    padding: 2rem;
 }
-  
+
 .form-container {
-    width: 50%;
+    flex: 1;
+    max-width: 800px;
     padding: 1.5rem;
     overflow-y: auto;
 }
-  
+
 .output-container {
-    width: 50%;
+    flex: 1;
+    max-width: 800px;
     padding: 1.5rem;
     background-color: #f3f4f6;
+    border-radius: 12px;
+    overflow-y: auto;
+    height: fit-content;
 }
 
 .form-title, .output-title {
@@ -73,14 +86,6 @@
 .output {
     white-space: pre-wrap;
     word-wrap: break-word;
-    max-width: 100%;
+    width: 100%;
     overflow-wrap: break-word;
-}
-
-.output-container {
-    width: 50%;
-    padding: 1.5rem;
-    background-color: #f3f4f6;
-    overflow-y: auto;
-    max-height: 80vh;
 }

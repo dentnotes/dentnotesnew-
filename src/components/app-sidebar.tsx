@@ -45,7 +45,7 @@ interface AppSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   onComponentSelect: (component: string) => void;
-  onNotesChange?: () => void;  // Add this line
+  onNotesChange?: () => void;
   passNoteId: (noteId: string) => void;
 }
 
@@ -127,9 +127,9 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange,
         <Sidebar className={isOpen ? "w-64" : "w-0"}>
           <SidebarContent>
           {/* Adding the title */} 
-          <div className={styles.dentnotesTitle}> 
+          <Link href="/outer-dashboard" className={styles.dentnotesTitle} onClick={() => onComponentSelect('null')}> 
             dentnotes 
-          </div>
+          </Link>
           <button onClick={onCreateNote} className={styles.newClinicBtn} > new clinic + </button>
           <div style={{ marginTop: '20px', marginLeft: '10px'}}>
             <SidebarGroup>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -15,8 +16,12 @@ import styles from "./DiagnosticForm.module.css"
 export default function DiagnosticForm({ noteId }: { noteId: string }) {
   const [userYear, setUserYear] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
-  const [generatedOutput, setGeneratedOutput] = useState('')
-  const [formData, setFormData] = useState({
+  const [generatedOutput, setGeneratedOutput] = useState<string>('')
+  const [tooltipContent, setTooltipContent] = useState<string>("Copy to clipboard");
+  const [isTooltipOpen, setIsTooltipOpen] = useState<boolean>(false);
+  const [title, setTitle] = useState<string>('')
+
+  const defaultFormData = {
     department: '',
     clinic: '',
     appointmentType: '',
@@ -26,14 +31,20 @@ export default function DiagnosticForm({ noteId }: { noteId: string }) {
     nv: '',
     generalWaitlist: false,
     other: ''
-  })
+  };
 
-  // Fetch existing note data when the component mounts
+  const [formData, setFormData] = useState(defaultFormData);
+
   useEffect(() => {
     const fetchNote = async () => {
+      setFormData(defaultFormData);
+      setGeneratedOutput('');
+
+      if (!noteId) return;
+
       const { data, error } = await supabase
         .from('notes')
-        .select('output')
+        .select('output, title')
         .eq('id', noteId)
         .single();
 
@@ -41,6 +52,7 @@ export default function DiagnosticForm({ noteId }: { noteId: string }) {
         console.error('Error fetching note:', error);
       } else if (data) {
         setGeneratedOutput(data.output);
+        setTitle(data.title || ''); // Set the title
         parseOutput(data.output);
       }
     };
@@ -54,6 +66,7 @@ export default function DiagnosticForm({ noteId }: { noteId: string }) {
             .from('notes')
             .update({ 
                 output: generatedOutput,
+                title: title,
                 updated_at: new Date().toISOString()
             })
             .eq('id', noteId);
@@ -66,7 +79,7 @@ export default function DiagnosticForm({ noteId }: { noteId: string }) {
     if (generatedOutput && noteId) {
         updateNote();
     }
-  }, [generatedOutput, noteId]);
+  }, [generatedOutput, title, noteId]);
 
   const parseOutput = (output: string) => {
     // Logic to parse the output and set formData
@@ -78,6 +91,7 @@ export default function DiagnosticForm({ noteId }: { noteId: string }) {
     const supervisorLine = lines.find(line => line.startsWith('Supervisor:'));
     const nvLine = lines.find(line => line.startsWith('N/V:'));
     const generalWaitlistLine = lines.find(line => line.includes('placed on general waitlist'));
+
 
     setFormData({
       department: departmentLine ? departmentLine[1] : '',
@@ -92,9 +106,17 @@ export default function DiagnosticForm({ noteId }: { noteId: string }) {
     });
   };
 
-  const handleChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-    updateGeneratedOutput({ ...formData, [field]: value })
+  // const handleChange = (field: string, value: string | boolean) => {
+  //   setFormData(prev => ({ ...prev, [field]: value }))
+  //   updateGeneratedOutput({ ...formData, [field]: value })
+  // }
+
+  const handleChange = (field: string, value: string | boolean) => { 
+    setFormData(prev => { 
+      const updatedData = { ...prev, [field]: value }; 
+      updateGeneratedOutput(updatedData); 
+      return updatedData; 
+    }); 
   }
 
   const updateGeneratedOutput = (updatedData: any) => {
@@ -116,15 +138,19 @@ export default function DiagnosticForm({ noteId }: { noteId: string }) {
     setGeneratedOutput(output)
   }
 
-  const handleCopy = () => {
+  const handleCopy = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent default button behavior
+    setIsTooltipOpen(true); // Keep tooltip visible
+    
     navigator.clipboard.writeText(generatedOutput)
       .then(() => {
-        console.log('Copied to clipboard')
-      })
-      .catch((err) => {
-        console.error('Failed to copy text: ', err)
-      })
-  }
+        setTooltipContent("Copied!"); // Change tooltip text on successful copy
+        setTimeout(() => {
+          setIsTooltipOpen(false); // Hide tooltip after delay
+        }, 2000);
+      });
+  };
+
 
   if (isLoading) {
     return <div>Loading...</div>
@@ -141,6 +167,15 @@ export default function DiagnosticForm({ noteId }: { noteId: string }) {
                 {/* <h2 className="form-title">Dental Clinic Form</h2> */}
 
                 <form className="space-y-3">
+                  <div className="space-y-1">
+                    <Label>Title</Label>
+                    <Input
+                      placeholder="Note Title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="mb-4"
+                    />
+                  </div>
                   <div className="space-y-1">
                     <Label>Department</Label>
                     <Tabs
@@ -254,23 +289,27 @@ export default function DiagnosticForm({ noteId }: { noteId: string }) {
         <div className={styles.box}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl">Generated Output</h2>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleCopy}
-              className="h-8 w-8"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
+            <TooltipProvider>
+            <Tooltip open={isTooltipOpen}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopy}
+                    className="h-8 w-8"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{tooltipContent}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <Textarea
             value={generatedOutput}
             readOnly
-            // onChange={(e) => {
-            //   const newOutput = e.target.value;
-            //   setGeneratedOutput(newOutput);
-            //   updateGeneratedOutput({ ...formData, output: newOutput }); // Pass the updated output
-            // }}
             className="min-h-[688px] font-mono text-sm whitespace-pre-wrap"
           />
         </div>
@@ -278,3 +317,4 @@ export default function DiagnosticForm({ noteId }: { noteId: string }) {
     </div>
   )
 }
+

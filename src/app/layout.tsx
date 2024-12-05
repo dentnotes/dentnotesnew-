@@ -24,10 +24,13 @@ const itInstrumentSans = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "dentnotes",
+  title: "Dentnotes",
   description: "Create dental clinic notes like never before",
 };
 
+<head>
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+</head>
 // export default function RootLayout({
 //   children,
 // }: Readonly<{

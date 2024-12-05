@@ -50,9 +50,10 @@ export default function DiagnosticForm({ noteId }: { noteId: string }) {
 
       if (error) {
         console.error('Error fetching note:', error);
+        setGeneratedOutput('');
       } else if (data) {
-        setGeneratedOutput(data.output);
-        setTitle(data.title || ''); // Set the title
+        setGeneratedOutput(data.output || '');
+        setTitle(data.title || '');
         parseOutput(data.output);
       }
     };
@@ -82,6 +83,21 @@ export default function DiagnosticForm({ noteId }: { noteId: string }) {
   }, [generatedOutput, title, noteId]);
 
   const parseOutput = (output: string) => {
+    if (!output) {
+      // Set default values when there's no output
+      setFormData({
+          department: '',
+          clinic: '',
+          appointmentType: '',
+          colgateRinse: false,
+          medicalHx: 'updated',
+          supervisor: '',
+          nv: '',
+          generalWaitlist: false,
+          other: ''
+      });
+      return;
+  }
     // Logic to parse the output and set formData
     const lines = output.split('\n');
     const departmentLine = lines[0].match(/Pt\. presented to Year \d+ (.+?) Clinic/);
@@ -168,7 +184,7 @@ export default function DiagnosticForm({ noteId }: { noteId: string }) {
 
                 <form className="space-y-3">
                   <div className="space-y-1">
-                    <Label>Title</Label>
+                    <Label>Note Title</Label>
                     <Input
                       placeholder="Note Title"
                       value={title}
@@ -317,4 +333,5 @@ export default function DiagnosticForm({ noteId }: { noteId: string }) {
     </div>
   )
 }
+
 

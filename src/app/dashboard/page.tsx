@@ -17,6 +17,7 @@ import { redirect } from 'next/navigation'
 import { createNote, getUserNotes, handleCreateNote } from '@/app/actions/notes'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { fetchSessionAndNotes } from "../actions/session";
 // import { useUser } from '@supabase/auth-helpers-react';
 
 
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const [currentNoteId, setCurrentNoteId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const router = useRouter()
+  const [user, setUser] = useState<any>(null);
 
   const generateNotesItems = [
     { id: 'diagnostic', label: 'Diagnostic' },
@@ -60,7 +62,10 @@ export default function Dashboard() {
       case 'billing':
         return <Billing />;
       case 'diagnostic':
-        return <DiagnosticForm noteId={currentNoteId || ''} />;
+        return <DiagnosticForm 
+          noteId={currentNoteId || ''} 
+          userId={user?.id || ''} // Add this line
+        />;
       case 'preventive':
         return <PreventiveForm />;
       case 'psr-scores':
@@ -70,6 +75,20 @@ export default function Dashboard() {
         return null;
     }
   };
+
+  useEffect(() => {
+    const loadSessionAndNotes = async () => {
+      const { session, notes: userNotes } = await fetchSessionAndNotes();
+      
+      if (!session) {
+        redirect('/auth');
+      } else {
+        setUser(session.user);
+      }
+    };
+
+    loadSessionAndNotes();
+  }, []);
 
   const handleNoteClick = (noteType: string, noteId: string) => {
     console.log('Note Type:', noteType, 'Note ID:', noteId);

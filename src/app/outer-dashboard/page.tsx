@@ -58,12 +58,14 @@ export default function outerDashboard() {
       case 'billing':
         return <Billing />;
       case 'diagnostic':
-        return <DiagnosticForm noteId={currentNoteId || ''} />;
+        return <DiagnosticForm 
+          noteId={currentNoteId || ''} 
+          userId={user?.id || ''} // Add this line
+        />;
       case 'preventive':
         return <PreventiveForm />;
       case 'psr-scores':
         return <PsrScores />;
-      // Add cases for all other components
       default:
         return null;
     }
@@ -83,6 +85,23 @@ export default function outerDashboard() {
 
     loadSessionAndNotes();
   }, []);
+
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setActiveComponent(null);
+      }
+    };
+  
+    // Add event listener when component mounts
+    document.addEventListener('keydown', handleEscapeKey);
+  
+    // Remove event listener when component unmounts
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, []); // Empty dependency array means this effect runs once on mount
+  
 
   const refreshNotes = () => {
     setRefreshKey(prev => prev + 1); // Add this function

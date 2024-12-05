@@ -26,6 +26,7 @@ export default function outerDashboard() {
   const [refreshKey, setRefreshKey] = useState(0);
   const router = useRouter()
   const [user, setUser] = useState<any>(null);
+  const [refreshTimestamp, setRefreshTimestamp] = useState<number>(Date.now());
 
   const generateNotesItems = [
     { id: 'diagnostic', label: 'Diagnostic' },
@@ -60,7 +61,7 @@ export default function outerDashboard() {
       case 'diagnostic':
         return <DiagnosticForm 
           noteId={currentNoteId || ''} 
-          userId={user?.id || ''} // Add this line
+          userId={user?.id || ''}
         />;
       case 'preventive':
         return <PreventiveForm />;
@@ -82,9 +83,11 @@ export default function outerDashboard() {
         setNotes(userNotes);
       }
     };
-
     loadSessionAndNotes();
-  }, []);
+    if (activeComponent !== null) {
+      loadSessionAndNotes();
+    }
+  }, [activeComponent]);
 
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent) => {
@@ -107,17 +110,16 @@ export default function outerDashboard() {
     setRefreshKey(prev => prev + 1); // Add this function
   };
 
-  const handleNoteClick = (noteType: string, noteId: string) => {
+  const handleNoteClick = async (noteType: string, noteId: string) => {
     switch (noteType) {
       case 'Diagnostic':
         setActiveComponent('diagnostic');
-        setCurrentNoteId(noteId); // Set the current note ID
+        setCurrentNoteId(noteId);
         break;
       case 'Preventive':
         setActiveComponent('preventive');
-        setCurrentNoteId(noteId); // Set the current note ID
+        setCurrentNoteId(noteId);
         break;
-      // Add more cases for other note types
       default:
         console.warn('Unknown note type:', noteType);
     }

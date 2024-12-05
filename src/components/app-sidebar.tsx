@@ -1,13 +1,22 @@
 "use client";
+
 import { useState, useEffect } from 'react'
-import { useUser } from '@supabase/auth-helpers-react';
-import { notesService } from '@/lib/supabase/notes';
-import type { Note } from '@/types/notes';
-import Link from 'next/link'
 import { ChevronRight, ChevronDown, ChevronUp, Plus, Inbox, User2, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
+import { useRouter } from 'next/navigation'
 import { Button } from './ui/button';
 import styles from './app-sidebar.module.css';
+import { signOut } from '@/app/auth/actions'
+import { redirect } from 'next/navigation'
+import { deleteNote, handleCreateNote, updateNote } from '@/app/actions/notes';
+import { fetchSessionAndNotes } from '@/app/actions/session';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import Link from 'next/link'
+import Account from '@/components/sidebar-footer/account';
+import Billing from '@/components/sidebar-footer/billing';
+import { supabase } from '@/lib/supabase'
+import { createNote, getUserNotes } from '@/app/actions/notes'
+
 import {
     Sidebar,
     SidebarContent,
@@ -22,10 +31,6 @@ import {
     SidebarMenuButton,
     SidebarMenuItem
 } from "@/components/ui/sidebar";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-
-import Account from '@/components/sidebar-footer/account';
-import Billing from '@/components/sidebar-footer/billing';
 
 import {
     DropdownMenu,
@@ -35,80 +40,71 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { render } from 'react-dom';
 
+
 interface AppSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   onComponentSelect: (component: string) => void;
-  onNotesChange?: () => void;  // Add this line
+  onNotesChange?: () => void;
+  passNoteId: (noteId: string) => void;
 }
 
-// interface Note {
-//   id: string;
-//   title: string;
-//   url: string;
-//   icon: any;
-// }
-
-export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange }: AppSidebarProps) {
-  const [groupContent, setGroupContent] = useState<string[]>([]); 
-  const [activeComponent, setActiveComponent] = useState<string | null>(null)
-  
-  const [notes, setNotes] = useState<Note[]>([]);
+export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange, passNoteId }: AppSidebarProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [notes, setNotes] = useState<any[]>([]);
+  const [groupContent, setGroupContent] = useState<string[]>([]); 
+  const [activeComponent, setActiveComponent] = useState<string | null>(null) 
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
-  const user = useUser();
-
-  // useEffect(() => {
-  //   if (user) {
-  //     loadNotes();
-  //   }
-  // }, [user]);
-
-  const loadNotes = async () => {
-    if (user) {
-      const userNotes = await notesService.getNotesByUserId(user.id);
-      setNotes(userNotes);
-    }
-  };
-
-  const addNewClinic = async () => {
-    if (!user) return;
-
-    const currentDateTime = new Date().toISOString();
-    const newNote = {
-      user_id: user.id,
-      title: `Note created: ${new Date().toLocaleString()}`,
-      content: '',
-      type: 'clinic' as const
-    };
-
-    const createdNote = await notesService.createNote(newNote);
-    if (createdNote) {
-      setNotes([createdNote, ...notes]);
-      onNotesChange?.();
-    }
-  };
+  const router = useRouter()
 
   useEffect(() => {
-    if (user) {
-      loadNotes();
+    const loadSessionAndNotes = async () => {
+      const { session, notes: userNotes } = await fetchSessionAndNotes();
+      
+      if (!session) {
+        redirect('/auth');
+      } else {
+        setUser(session.user);
+        setNotes(userNotes);
+      }
+    };
+
+    loadSessionAndNotes();
+  }, []);
+
+  async function onCreateNote() {
+    router.push('/dashboard');
+  }
+
+  const handleSignOut = async () => {
+    const result = await signOut()
+    if (result.error) {
+      console.error('Error signing out:', result.error)
+    } else {
+      router.push('/auth')
     }
-  }, [user, onNotesChange]);
+    router.push('/')
+  }
+
+  const handleNoteClick = (note: any) => {
+    onComponentSelect(note.type);
+    passNoteId(note.id);
+  };
 
   const handleDoubleClick = (index: number) => {
     setEditingIndex(index);
   };
   
   const handleRename = async (noteId: string, newTitle: string) => {
-    const success = await notesService.updateNoteTitle(noteId, newTitle);
-    if (success) {
-      const updatedNotes = notes.map(note => 
-        note.id === noteId ? { ...note, title: newTitle } : note
+    const note = notes.find(note => note.id === noteId);
+    if (note) {
+      await updateNote(noteId, newTitle, note.content, note.type);
+      setNotes((prevNotes) => 
+        prevNotes.map(n => n.id === noteId ? { ...n, title: newTitle } : n)
       );
-      setNotes(updatedNotes);
     }
-    setEditingIndex(null);
   };
   
   const handleDeleteClick = (index: number) => {
@@ -116,27 +112,25 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
     setIsDeleteDialogOpen(true);
   };
   
-  const confirmDelete = async () => {
+  async function handleConfirmDelete() {
     if (noteToDelete) {
-      const success = await notesService.deleteNote(noteToDelete);
-      if (success) {
-        setNotes(notes.filter(note => note.id !== noteToDelete));
-      }
+      await deleteNote(noteToDelete);
       setIsDeleteDialogOpen(false);
       setNoteToDelete(null);
+      setNotes((prevNotes) => prevNotes.filter(note => note.id !== noteToDelete));
     }
-  };
-  
+  }
+
   return (
     <SidebarProvider>
       <div className="relative">
         <Sidebar className={isOpen ? "w-64" : "w-0"}>
           <SidebarContent>
           {/* Adding the title */} 
-          <div className={styles.dentnotesTitle}> 
+          <Link href="/outer-dashboard" className={styles.dentnotesTitle} onClick={() => onComponentSelect('null')}> 
             dentnotes 
-          </div>
-          <button onClick={addNewClinic} className={styles.newClinicBtn} > new clinic + </button>
+          </Link>
+          <button onClick={onCreateNote} className={styles.newClinicBtn} > new clinic + </button>
           <div style={{ marginTop: '20px', marginLeft: '10px'}}>
             <SidebarGroup>
               <SidebarGroupLabel>Clinic Notes</SidebarGroupLabel>
@@ -145,8 +139,9 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
               </SidebarGroupAction>
               <SidebarGroupContent>
                 <SidebarMenu>
+
                   {notes.map((note, index) => (
-                    <div key={note.id} className="group relative">
+                    <div key={note.id} className="group relative" onClick={() => handleNoteClick(note)}>
                       <SidebarMenuItem
                         // icon={note.icon}
                         onDoubleClick={() => handleDoubleClick(index)}
@@ -169,7 +164,7 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
                           ) : (
                             <span className="block truncate">{note.title}</span>
                           )}
-                          <button
+                          <span
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteClick(index);
@@ -177,7 +172,7 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
                             className="absolute right-2 hidden group-hover:inline-flex items-center justify-center p-1 rounded hover:bg-red-100 dark:hover:bg-red-900"
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
-                          </button>
+                          </span>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     </div>
@@ -195,23 +190,13 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
                         <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
                           Cancel
                         </Button>
-                        <Button variant="destructive" onClick={confirmDelete}>
+                        <Button variant="destructive" onClick={handleConfirmDelete}>
                           Delete
                         </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
 
-                  {/* {items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <a href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </a>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))} */}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -237,10 +222,11 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange 
                     <DropdownMenuItem onClick={() => onComponentSelect('billing')}>
                       <span>Billing</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/">
-                        <span>Sign out</span>
-                      </Link>
+                    <DropdownMenuItem onSelect={(e) => {
+                      e.preventDefault()
+                      handleSignOut()
+                    }}>
+                      <span>Sign out</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

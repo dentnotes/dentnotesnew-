@@ -1,31 +1,31 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ChevronRight } from "lucide-react";
 import styles from './page.module.css';
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { fetchSessionAndNotes } from "../actions/session";
+import { redirect } from 'next/navigation'
 
 import DiagnosticForm from '@/app/forms/DiagnosticForm/page';
 import PreventiveForm from '@/app/forms/PreventiveForm';
 import PsrScores from '@/components/guides/PsrScores';
-
+// etc...
 import Account from '@/components/sidebar-footer/account';
 import Billing from '@/components/sidebar-footer/billing';
 
-import { supabase } from '@/lib/supabase'
-import { redirect } from 'next/navigation'
-import { createNote, getUserNotes, handleCreateNote } from '@/app/actions/notes'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-// import { useUser } from '@supabase/auth-helpers-react';
 
-
-export default function Dashboard() {
+export default function outerDashboard() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const [activeComponent, setActiveComponent] = useState<string | null>(null);
+  const [notes, setNotes] = useState<any[]>([]);
   const [currentNoteId, setCurrentNoteId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const router = useRouter()
+  const [user, setUser] = useState<any>(null);
 
   const generateNotesItems = [
     { id: 'diagnostic', label: 'Diagnostic' },
@@ -53,8 +53,6 @@ export default function Dashboard() {
 
   const renderComponent = () => {
     switch (activeComponent) {
-      case 'null':
-        return null;
       case 'account':
         return <Account />;
       case 'billing':
@@ -71,35 +69,38 @@ export default function Dashboard() {
     }
   };
 
-  const handleNoteClick = (noteType: string, noteId: string) => {
-    console.log('Note Type:', noteType, 'Note ID:', noteId);
-    switch (noteType) {
-      case 'null':
-        setActiveComponent(null);
-        break;
-      case 'Diagnostic':
-        setActiveComponent('diagnostic');
-        setCurrentNoteId(noteId);
-        break;
-      case 'Preventive':
-        setActiveComponent('preventive');
-        setCurrentNoteId(noteId);
-        break;
-      // Add more cases for other note types
-      default:
-        console.warn('Unknown note type:', noteType);
-    }
-  };
+  useEffect(() => {
+    const loadSessionAndNotes = async () => {
+      const { session, notes: userNotes } = await fetchSessionAndNotes();
+      
+      if (!session) {
+        redirect('/auth');
+      } else {
+        setUser(session.user);
+        setNotes(userNotes);
+      }
+    };
+
+    loadSessionAndNotes();
+  }, []);
 
   const refreshNotes = () => {
     setRefreshKey(prev => prev + 1); // Add this function
   };
 
-  const handleGenerateNote = async (type: string) => {
-    const noteId = await createNote (type);
-    console.log('Generated Note ID:', noteId);
-    if (typeof noteId === 'string') {
-      handleNoteClick(type.charAt(0).toUpperCase() + type.slice(1), noteId);
+  const handleNoteClick = (noteType: string, noteId: string) => {
+    switch (noteType) {
+      case 'Diagnostic':
+        setActiveComponent('diagnostic');
+        setCurrentNoteId(noteId); // Set the current note ID
+        break;
+      case 'Preventive':
+        setActiveComponent('preventive');
+        setCurrentNoteId(noteId); // Set the current note ID
+        break;
+      // Add more cases for other note types
+      default:
+        console.warn('Unknown note type:', noteType);
     }
   };
 
@@ -117,23 +118,23 @@ export default function Dashboard() {
       <main className={`flex-1 transition-all duration-300 ${isOpen ? 'ml-0' : 'ml-0'}`}>
         {!activeComponent ? (
           <div className={styles.welcome}>
-            <h1 className={styles.title}>Welcome</h1>
-            <p className={styles.subtitle}>Get started by selecting the procedure you want to notetake or the guide you want to follow.</p>
+            <h1 className={styles.title}>Welcome {user?.name}</h1>
+            <p className={styles.subtitle}>Get started by creating a new note or selecting the guide you want to follow.</p>
             <div className={styles.generate}>
-              <div className={styles.box}>
-                <h2 className="text-xl font-bold mb-4">Generate Notes</h2>
-                <div className="space-y-2">
-                  {generateNotesItems.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => handleGenerateNote(item.label)}
-                      className={styles.listButton}
-                    >
-                      <ChevronRight size={20} />
-                      {item.label}
-                    </button>
+              <div className={styles.lbox}>
+                <h2 className="text-xl font-bold mb-4">Recently Used</h2>
+                {notes
+                  .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+                  .slice(0, 4)
+                  .map((note) => (
+                    <div key={note.id} onClick={() => handleNoteClick(note.type, note.id)} className="block mb-4 cursor-pointer">                      <Card>
+                        <CardHeader>
+                          <CardTitle className={styles.title}>{note.title}</CardTitle>
+                          <CardDescription className={styles.description}>{note.type}</CardDescription>
+                        </CardHeader>
+                      </Card>
+                    </div>
                   ))}
-                </div>
               </div>
               <div className={styles.box}>
                 <h2 className="text-xl font-bold mb-4">Guides</h2>

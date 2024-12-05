@@ -4,28 +4,24 @@ import { useState, useEffect } from 'react'
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-
-import styles from "./DiagnosticForm.module.css"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Copy } from "lucide-react" // Make sure you have lucide-react installed
+import { supabase } from '@/lib/supabase';
+import styles from "./DiagnosticForm.module.css"
 
-import { createClient } from '@/lib/supabase/client'
-
-
-
-export default function DiagnosticForm() {
-  const supabase = createClient()
-
+export default function DiagnosticForm({ noteId }: { noteId: string }) {
   const [userYear, setUserYear] = useState<string>('')
-  const [isLoading, setIsLoading] = useState(true)
-  const [editableOutput, setEditableOutput] = useState('')
-  const [formData, setFormData] = useState({
+  const [isLoading, setIsLoading] = useState(false)
+  const [generatedOutput, setGeneratedOutput] = useState<string>('')
+  const [tooltipContent, setTooltipContent] = useState<string>("Copy to clipboard");
+  const [isTooltipOpen, setIsTooltipOpen] = useState<boolean>(false);
+  const [title, setTitle] = useState<string>('')
+
+  const defaultFormData = {
     department: '',
     clinic: '',
     appointmentType: '',
@@ -35,102 +31,143 @@ export default function DiagnosticForm() {
     nv: '',
     generalWaitlist: false,
     other: ''
-  })
+  };
+
+  const [formData, setFormData] = useState(defaultFormData);
 
   useEffect(() => {
-    async function getUserYear() {
-      const { data: { user } } = await supabase.auth.getUser()
-      console.log('Auth user:', user) // Debug log
-      
-      if (user) {
-        console.log('User ID:', user.id) // Debug log
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('year')
-          .eq('id', user.id)
-          .single()
-  
-        console.log('Profile data:', profile) // Debug log
-        console.log('Profile error:', error) // Debug log
-  
-        if (error) {
-          console.error('Error fetching user year:', error.message)
-          return
-        }
-  
-        if (profile?.year) {
-          setUserYear(profile.year)
-        }
+    const fetchNote = async () => {
+      setFormData(defaultFormData);
+      setGeneratedOutput('');
+
+      if (!noteId) return;
+
+      const { data, error } = await supabase
+        .from('notes')
+        .select('output, title')
+        .eq('id', noteId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching note:', error);
+        setGeneratedOutput('');
+      } else if (data) {
+        setGeneratedOutput(data.output || '');
+        setTitle(data.title || '');
+        parseOutput(data.output);
       }
-      setIsLoading(false)
-    }
-  
-    getUserYear()
-  }, [supabase])
-  
+    };
+
+    fetchNote();
+  }, [noteId]);
+
   useEffect(() => {
-    setEditableOutput(generateOutput())
-  }, [formData]) // This will run whenever formData changes
+    const updateNote = async () => {
+        const { error } = await supabase
+            .from('notes')
+            .update({ 
+                output: generatedOutput,
+                title: title,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', noteId);
 
-  const handleChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+        if (error) {
+            console.error('Error updating note:', error);
+        }
+    };
+
+    if (generatedOutput && noteId) {
+        updateNote();
+    }
+  }, [generatedOutput, title, noteId]);
+
+  const parseOutput = (output: string) => {
+    if (!output) {
+      // Set default values when there's no output
+      setFormData({
+          department: '',
+          clinic: '',
+          appointmentType: '',
+          colgateRinse: false,
+          medicalHx: 'updated',
+          supervisor: '',
+          nv: '',
+          generalWaitlist: false,
+          other: ''
+      });
+      return;
+  }
+    // Logic to parse the output and set formData
+    const lines = output.split('\n');
+    const departmentLine = lines[0].match(/Pt\. presented to Year \d+ (.+?) Clinic/);
+    const clinicLine = lines[0].match(/Clinic (.+?) for/);
+    const appointmentTypeLine = lines[0].match(/for (.+)/);
+    const medicalHxLine = lines.find(line => line.startsWith('Medical Hx'));
+    const supervisorLine = lines.find(line => line.startsWith('Supervisor:'));
+    const nvLine = lines.find(line => line.startsWith('N/V:'));
+    const generalWaitlistLine = lines.find(line => line.includes('placed on general waitlist'));
+
+
+    setFormData({
+      department: departmentLine ? departmentLine[1] : '',
+      clinic: clinicLine ? clinicLine[1] : '',
+      appointmentType: appointmentTypeLine ? appointmentTypeLine[1] : '',
+      colgateRinse: output.includes('Colgate 1.5% Hydrogen Peroxide Mouth rinse given.'),
+      medicalHx: medicalHxLine ? medicalHxLine.split(' ')[2] : 'updated',
+      supervisor: supervisorLine ? supervisorLine.replace('Supervisor: Dr ', '') : '',
+      nv: nvLine ? nvLine.replace('N/V: ', '') : '',
+      generalWaitlist: !!generalWaitlistLine,
+      other: '' // Handle 'other' if needed
+    });
+  };
+
+  // const handleChange = (field: string, value: string | boolean) => {
+  //   setFormData(prev => ({ ...prev, [field]: value }))
+  //   updateGeneratedOutput({ ...formData, [field]: value })
+  // }
+
+  const handleChange = (field: string, value: string | boolean) => { 
+    setFormData(prev => { 
+      const updatedData = { ...prev, [field]: value }; 
+      updateGeneratedOutput(updatedData); 
+      return updatedData; 
+    }); 
   }
 
-  const handleOutputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setEditableOutput(e.target.value)
-  }
-
-  const handleCopy = () => {
-    const output = generateOutput()
-    navigator.clipboard.writeText(output)
-      .then(() => {
-        // You could add a toast notification here if you want
-        console.log('Copied to clipboard')
-      })
-      .catch((err) => {
-        console.error('Failed to copy text: ', err)
-      })
-  }
-
-  // Modify handleChange to work with department tabs
-  const handleDepartmentChange = (value: string) => {
-    setFormData(prev => ({ ...prev, department: value }))
-  }
-
-  const generateOutput = () => {
-    let output = `Pt. presented to Year ${userYear} ${formData.department} Clinic ${formData.clinic} for\n${formData.appointmentType}\n`
+  const updateGeneratedOutput = (updatedData: any) => {
+    let output = `Pt. presented to Year ${updatedData.year || ''} ${updatedData.department} Clinic ${updatedData.clinic} for\n${updatedData.appointmentType}\n`
     output += "3C's confirmed."
-    if (formData.colgateRinse) {
+    if (updatedData.colgateRinse) {
       output += " Colgate 1.5% Hydrogen Peroxide Mouth rinse given.\n"
     } else {
       output += "\n"
     }
-    output += `Medical Hx ${formData.medicalHx}\n\n`
-    output += `Supervisor: Dr ${formData.supervisor}\n`
-    if (formData.generalWaitlist) {
-      output += "Patient placed on general waitlist and seperated\n"
-    } else if (formData.nv) {
-      output += `N/V: ${formData.nv}\n`
-    } else if (formData.other) {
-      // Split long text into multiple lines
-      const words = formData.other.split(' ')
-      let currentLine = ''
-      let formattedOther = ''
-      
-      words.forEach(word => {
-        if ((currentLine + word).length > 45) { // Adjust 40 to desired line length
-          formattedOther += currentLine + '\n'
-          currentLine = word + ' '
-        } else {
-          currentLine += word + ' '
-        }
-      })
-      formattedOther += currentLine
-      output += formattedOther
+    output += `Medical Hx ${updatedData.medicalHx}\n\n`
+    output += `Supervisor: Dr ${updatedData.supervisor}\n`
+    if (updatedData.generalWaitlist) {
+      output += "Patient placed on general waitlist and separated\n"
+    } else if (updatedData.nv) {
+      output += `N/V: ${updatedData.nv}\n`
     }
-    return output
+
+    setGeneratedOutput(output)
   }
-  
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent default button behavior
+    setIsTooltipOpen(true); // Keep tooltip visible
+    
+    navigator.clipboard.writeText(generatedOutput)
+      .then(() => {
+        setTooltipContent("Copied!"); // Change tooltip text on successful copy
+        setTimeout(() => {
+          setIsTooltipOpen(false); // Hide tooltip after delay
+        }, 2000);
+      });
+  };
+
+
   if (isLoading) {
     return <div>Loading...</div>
   }
@@ -144,30 +181,23 @@ export default function DiagnosticForm() {
             <div className="container">
               <div className="form-container">
                 {/* <h2 className="form-title">Dental Clinic Form</h2> */}
-                {/* <form className="form"> */}
+
                 <form className="space-y-3">
-                  {/* <div className="form-group">
                   <div className="space-y-1">
-                    <Label>Year</Label>
-                    <Select onValueChange={(value) => handleChange('year', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select year" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="3rd">3rd</SelectItem>
-                        <SelectItem value="4th">4th</SelectItem>
-                        <SelectItem value="5th">5th</SelectItem>
-                      </SelectContent>
-                    </Select> 
+                    <Label>Note Title</Label>
+                    <Input
+                      placeholder="Note Title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="mb-4"
+                    />
                   </div>
-                   */}
-                  {/* <div className="form-group"> */}
                   <div className="space-y-1">
                     <Label>Department</Label>
                     <Tabs
                       defaultValue="GDP"
                       value={formData.department || 'GDP'}
-                      onValueChange={handleDepartmentChange}
+                      onValueChange={(value) => handleChange('department', value)}
                       className="w-full"
                     >
                       <TabsList className="grid w-full grid-cols-4">
@@ -178,7 +208,7 @@ export default function DiagnosticForm() {
                       </TabsList>
                     </Tabs>
                   </div>
-                  {/* <div className="form-group"> */}
+
                   <div className="space-y-1">
                     <Label>Clinic</Label>
                     <Select onValueChange={(value) => handleChange('clinic', value)}>
@@ -193,7 +223,6 @@ export default function DiagnosticForm() {
                     </Select>
                   </div>
 
-                  {/* <div className="form-group"> */}
                   <div className="space-y-1">
                     <Label>Appointment Type</Label>
                     <Select onValueChange={(value) => handleChange('appointmentType', value)}>
@@ -207,7 +236,6 @@ export default function DiagnosticForm() {
                     </Select>
                   </div>
 
-                  {/* <div className="form-group"> */}
                   <div className="space-y-5 space-x-2">
                     <Checkbox
                       id="colgateRinse"
@@ -217,7 +245,6 @@ export default function DiagnosticForm() {
                     <Label htmlFor="colgateRinse">Colgate 1.5% Hydrogen Peroxide Mouth rinse given</Label>
                   </div>
 
-                  {/* <div className="form-group"> */}
                   <div className="space-y-1">
                     <Label>Medical History</Label>
                     <Select onValueChange={(value) => handleChange('medicalHx', value)}>
@@ -232,7 +259,6 @@ export default function DiagnosticForm() {
                     </Select>
                   </div>
 
-                  {/* <div className="form-group"> */}
                   <div className="space-y-1">
                     <Label htmlFor="supervisor">Supervisor</Label>
                     <Input
@@ -243,7 +269,6 @@ export default function DiagnosticForm() {
                     />
                   </div>
 
-                  {/* <div className="form-group"> */}
                   <div className="space-y-1">
                     <Label htmlFor="nv">N/V</Label>
                     <Input
@@ -254,7 +279,6 @@ export default function DiagnosticForm() {
                     />
                   </div>
 
-                  {/* <div className="form-group"> */}
                   <div className="space-y-5 space-x-2">
                     <Checkbox
                       id="generalWaitlist"
@@ -264,7 +288,6 @@ export default function DiagnosticForm() {
                     <Label htmlFor="generalWaitlist">Patient placed on general waitlist and seperated</Label>
                   </div>
 
-                  {/* <div className="form-group"> */}
                   <div className="space-y-1">
                     <Label htmlFor="other">Other</Label>
                     <Textarea
@@ -282,60 +305,33 @@ export default function DiagnosticForm() {
         <div className={styles.box}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl">Generated Output</h2>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleCopy}
-              className="h-8 w-8"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
+            <TooltipProvider>
+            <Tooltip open={isTooltipOpen}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopy}
+                    className="h-8 w-8"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{tooltipContent}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
-          <div className="space-y-2">
-            <div className="output-container">
-              <Textarea
-                value={editableOutput}
-                onChange={handleOutputChange}
-                className="min-h-[688px] font-mono text-sm whitespace-pre-wrap"
-                onKeyDown={(e) => {
-                  if (e.key === 'Tab') {
-                    e.preventDefault()
-                    const start = e.currentTarget.selectionStart
-                    const end = e.currentTarget.selectionEnd
-                    const value = e.currentTarget.value
-                    e.currentTarget.value = value.substring(0, start) + '    ' + value.substring(end)
-                    e.currentTarget.selectionStart = e.currentTarget.selectionEnd = start + 4
-                    handleOutputChange(e as any)
-                  }
-                }}
-              />
-            </div>
-          </div>
+          <Textarea
+            value={generatedOutput}
+            readOnly
+            className="min-h-[688px] font-mono text-sm whitespace-pre-wrap"
+          />
         </div>
       </div>
     </div>
   )
 }
 
-
-// return (
-//   <div className={styles.welcome}>
-//     <h1 className={styles.title}>Diagnostic</h1>
-//     <div className={styles.generate}>
-//       <div className={styles.box}>
-//         <h2 className="text-xl mb-4">Comprehensive Oral Examination</h2>
-//         <div className="space-y-2">
-
-//         </div>
-//       </div>
-//       <div className={styles.box}>
-//         <h2 className="text-xl mb-4">Output</h2>
-//         <div className="space-y-2">
-          
-//         </div>
-//       </div>
-//     </div>
-//   </div>
-// );
-// }
 

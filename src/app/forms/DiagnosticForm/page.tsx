@@ -13,7 +13,13 @@ import { Copy } from "lucide-react" // Make sure you have lucide-react installed
 import { supabase } from '@/lib/supabase';
 import styles from "./DiagnosticForm.module.css"
 
-export default function DiagnosticForm({ noteId, userId }: { noteId: string; userId: string; }) {
+export default function DiagnosticForm({ 
+  noteId, 
+  userId,
+}: { 
+  noteId: string; 
+  userId: string;
+}) {
   const [userYear, setUserYear] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [generatedOutput, setGeneratedOutput] = useState<string>('')

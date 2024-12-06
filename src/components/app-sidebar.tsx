@@ -133,10 +133,7 @@ export function AppSidebar({ isOpen, onToggle, onComponentSelect, onNotesChange,
           <button onClick={onCreateNote} className={styles.newClinicBtn} > new clinic + </button>
           <div style={{ marginTop: '20px', marginLeft: '10px'}}>
             <SidebarGroup>
-              <SidebarGroupLabel>Clinic Notes</SidebarGroupLabel>
-              <SidebarGroupAction>
-                {/* <Plus /> <span className="sr-only">Add Project</span> */}
-              </SidebarGroupAction>
+              <SidebarGroupLabel>All Clinic Notes</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
 

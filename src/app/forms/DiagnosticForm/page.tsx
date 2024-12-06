@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import { Copy } from "lucide-react" // Make sure you have lucide-react installed
 import { supabase } from '@/lib/supabase';
 import styles from "./DiagnosticForm.module.css"
@@ -32,6 +33,45 @@ export default function DiagnosticForm({
     appointmentType: '',
     colgateRinse: false,
     medicalHx: 'updated',
+    eoe: {
+      temporalis: false,
+      masseter: false,
+      tmj: false,
+      salivaryGlands: false,
+      lymphNodes: false,
+      facialMuscles: false
+    },
+    eoeCustom: {
+        temporalis: '',
+        masseter: '',
+        tmj: '',
+        salivaryGlands: '',
+        lymphNodes: '',
+        facialMuscles: ''
+    },
+    ioe: {
+        fom: false,
+        tongue: false,
+        palatalMucosa: false,
+        buccalMucosa: false,
+        hardTissue: false
+    },
+    ioeCustom: {
+        fom: '',
+        tongue: '',
+        palatalMucosa: '',
+        buccalMucosa: '',
+        hardTissue: ''
+    },
+    xrays: '',
+    provisionalTx: '',
+    txOptions: '',
+    systemicPhase: '',
+    acutePhase: '',
+    diseaseControl: '',
+    definitivePhase: '',
+    maintenancePhase: '',
+    extraComment: '',
     supervisor: '',
     nv: '',
     generalWaitlist: false,
@@ -40,10 +80,37 @@ export default function DiagnosticForm({
   const [formData, setFormData] = useState(defaultFormData);
 
   useEffect(() => {
-    const fetchNote = async () => {
-      // setFormData(defaultFormData);
-      // setGeneratedOutput('');
+    const fetchUserYear = async () => {
+        if (userId) {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('year')
+                .eq('id', userId)
+                .single();
 
+            if (error) {
+                console.error('Error fetching user year:', error);
+                return;
+            }
+
+            if (data?.year) {
+                setUserYear(data.year);
+                // updateGeneratedOutput(formData);
+            } else {
+                console.log('No year data found in profile');
+            }
+        } else {
+            console.log('No userId provided');
+        }
+    };
+
+    if (userId) {
+        fetchUserYear();
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    const fetchNote = async () => {
       if (!noteId) return;
 
       const { data, error } = await supabase
@@ -56,9 +123,10 @@ export default function DiagnosticForm({
         console.error('Error fetching note:', error);
         setGeneratedOutput('');
       } else if (data) {
-        setGeneratedOutput(data.output || '');
         setTitle(data.title || '');
-        parseOutput(data.output);
+        const parsedData = parseOutput(data.output);
+        setFormData(parsedData);
+        updateGeneratedOutput(parsedData);
       }
     };
 
@@ -86,121 +154,228 @@ export default function DiagnosticForm({
     }
   }, [generatedOutput, title, noteId]);
 
-  useEffect(() => {
-    const fetchUserYear = async () => {
-        console.log('Starting to fetch user year with userId:', userId);
-        
-        if (userId) {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('year')
-                .eq('id', userId)
-                .single();
-
-            console.log('Supabase response - Data:', data);
-            console.log('Supabase response - Error:', error);
-
-            if (error) {
-                console.error('Error fetching user year:', error);
-                return;
-            }
-
-            if (data?.year) {
-                console.log('Setting user year to:', data.year);
-                setUserYear(data.year);
-                // Update the generated output with the new year
-                updateGeneratedOutput(formData);
-            } else {
-                console.log('No year data found in profile');
-            }
-        } else {
-            console.log('No userId provided');
-        }
-    };
-
-    if (userId) {
-        fetchUserYear();
-    }
-  }, [userId]);
-
   const parseOutput = (output: string | null) => {
     if (!output) {
-      setFormData(defaultFormData);
-      return;
+      const defaultData = { ...defaultFormData };
+      setFormData(defaultData);
+      return defaultData; // Return defaultFormData instead of undefined
     }
 
     const lines = output?.split('\n') || [];
-    const departmentLine = lines[0]?.match(/Year \d*\s*(\w+)\s*Clinic/);
-    // console.log('Full first line:', lines[0]); // Debug the full line
-    // console.log('Department match:', departmentLine); // Debug the match
-    const clinicLine = lines[0]?.match(/Clinic ([^\s]+) for/);
-    const appointmentTypeLine = lines[0]?.match(/for ([^\n]+)/);
-    const medicalHxLine = lines.find(line => line?.startsWith('Medical Hx'));
-    const supervisorLine = lines.find(line => line?.startsWith('Supervisor:'));
-    const nvLine = lines.find(line => line?.startsWith('N/V:'));
-    const generalWaitlistLine = lines.find(line => line?.includes('placed on general waitlist'));
+    
+    // First line parsing
+    const firstLine = lines[0] || '';
+    // const departmentMatch = firstLine.match(/Year \d+ (\w+) Clinic/);
+    const departmentMatch = firstLine.match(/Year \d*\s*(\w+)\s*Clinic/);
+    const clinicMatch = firstLine.match(/Clinic ([^\s]+) for/);
+    const appointmentMatch = firstLine.match(/for ([^\n]+)/);
 
-    const newFormData = {
-      department: departmentLine?.[1] || 'GDP',
-      clinic: clinicLine?.[1]?.trim() || '',
-      appointmentType: appointmentTypeLine?.[1]?.trim() || '',
-      colgateRinse: output.includes('Colgate 1.5% Hydrogen Peroxide Mouth rinse given.'),
-      medicalHx: medicalHxLine ? medicalHxLine.split(' ')[2] : 'updated',
-      supervisor: supervisorLine ? supervisorLine.replace('Supervisor: Dr ', '').trim() : '',
-      nv: nvLine ? nvLine.replace('N/V: ', '').trim() : '',
-      generalWaitlist: !!generalWaitlistLine,
-      other: ''
+    // E/OE parsing
+    const eoeMatch = lines.find(line => line.startsWith('E/OE:'));
+    const ioeMatch = lines.find(line => line.startsWith('I/OE:'));
+    const medicalHxLine = lines.find(line => line.startsWith('Medical Hx'));
+    const xraysLine = lines.find(line => line.match(/(?:OPG|BWs|x-rays)/));
+
+    // Parse E/OE custom entries
+    const eoeCustomEntries = {
+      temporalis: '',
+      masseter: '',
+      tmj: '',
+      salivaryGlands: '',
+      lymphNodes: '',
+      facialMuscles: ''
+    };
+  
+    if (eoeMatch) {
+      const customMatches = eoeMatch.matchAll(/(\w+):\s*([^,;]+)/g);
+      for (const match of Array.from(customMatches)) {
+          const key = match[1] as keyof typeof eoeCustomEntries;
+          if (key in eoeCustomEntries) {
+              eoeCustomEntries[key] = match[2].trim();
+          }
+      }
+    }
+    
+    // Parse I/OE custom entries
+    const ioeCustomEntries = {
+      fom: '',
+      tongue: '',
+      palatalMucosa: '',
+      buccalMucosa: '',
+      hardTissue: ''
     };
 
-    console.log('Setting form data:', newFormData); // Debug log
+    if (ioeMatch) {
+      const customMatches = ioeMatch.matchAll(/(\w+):\s*([^,;]+)/g);
+      for (const match of Array.from(customMatches)) {
+          const key = match[1] as keyof typeof ioeCustomEntries;
+          if (key in ioeCustomEntries) {
+              ioeCustomEntries[key] = match[2].trim();
+          }
+      }
+    }
+    
+    // Treatment phases parsing
+    const provisionalTxLine = lines.find(line => line.startsWith('Provisional Tx:'));
+    const txOptionsLine = lines.find(line => line.startsWith('Tx options'));
+    const systemicPhaseLine = lines.find(line => line.startsWith('Systemic phase:'));
+    const acutePhaseLine = lines.find(line => line.startsWith('Acute phase:'));
+    const diseaseControlLine = lines.find(line => line.startsWith('Disease control:'));
+    const definitivePhaseLine = lines.find(line => line.startsWith('Definitive phase:'));
+    const maintenancePhaseLine = lines.find(line => line.startsWith('Maintenance phase:'));
+    const extraCommentLine = lines.find(line => line.startsWith('Extra comment:'));
+    
+    const supervisorLine = lines.find(line => line.startsWith('Supervisor:'));
+    const nvLine = lines.find(line => line.startsWith('N/V:'));
+    const generalWaitlistLine = lines.find(line => line.includes('placed on general waitlist'));
+
+    const newFormData = {
+        ...formData,
+        department: departmentMatch?.[1] || 'GDP',
+        clinic: clinicMatch?.[1]?.trim() || '',
+        appointmentType: appointmentMatch?.[1]?.trim() || '',
+        colgateRinse: output.includes('Colgate 1.5% Hydrogen Peroxide Mouth rinse given.'),
+        medicalHx: medicalHxLine ? medicalHxLine.split(' ')[2] : 'updated',
+        eoe: {
+            temporalis: eoeMatch?.includes('temporalis') || false,
+            masseter: eoeMatch?.includes('masseter') || false,
+            tmj: eoeMatch?.includes('TMJ') || false,
+            salivaryGlands: eoeMatch?.includes('salivary glands') || false,
+            lymphNodes: eoeMatch?.includes('lymph nodes') || false,
+            facialMuscles: eoeMatch?.includes('muscles of facial expression') || false
+        },
+        eoeCustom: eoeCustomEntries,
+        ioe: {
+            fom: ioeMatch?.includes('FOM') || false,
+            tongue: ioeMatch?.includes('tongue') || false,
+            palatalMucosa: ioeMatch?.includes('palatal mucosa') || false,
+            buccalMucosa: ioeMatch?.includes('buccal mucosa') || false,
+            hardTissue: ioeMatch?.includes('Hard tissue') || false
+        },
+        ioeCustom: ioeCustomEntries,
+        xrays: xraysLine?.trim() || '',
+        provisionalTx: provisionalTxLine ? provisionalTxLine.replace('Provisional Tx:', '').trim() : '',
+        txOptions: txOptionsLine ? txOptionsLine.replace('Tx options discussed and presented to pt:', '').trim() : '',
+        systemicPhase: systemicPhaseLine ? systemicPhaseLine.replace('Systemic phase:', '').trim() : '',
+        acutePhase: acutePhaseLine ? acutePhaseLine.replace('Acute phase:', '').trim() : '',
+        diseaseControl: diseaseControlLine ? diseaseControlLine.replace('Disease control:', '').trim() : '',
+        definitivePhase: definitivePhaseLine ? definitivePhaseLine.replace('Definitive phase:', '').trim() : '',
+        maintenancePhase: maintenancePhaseLine ? maintenancePhaseLine.replace('Maintenance phase:', '').trim() : '',
+        extraComment: extraCommentLine ? extraCommentLine.replace('Extra comment:', '').trim() : '',
+        supervisor: supervisorLine ? supervisorLine.replace('Supervisor: Dr', '').trim() : '',
+        nv: nvLine ? nvLine.replace('N/V:', '').trim() : '',
+        generalWaitlist: !!generalWaitlistLine,
+        other: ''
+    };
+
     setFormData(newFormData);
-    updateGeneratedOutput(newFormData);
+    // updateGeneratedOutput(newFormData);
     return newFormData;
   };
 
 
-  const handleChange = (field: string, value: string | boolean) => { 
-    console.log(`Changing ${field} to:`, value); // Debug log
+
+  const handleChange = (
+    field: string,
+    value: string | boolean | Record<string, boolean> | Record<string, string>
+) => { 
     setFormData(prev => { 
-      const updatedData = { ...prev, [field]: value }; 
-      console.log('Updated form data:', updatedData); // Debug log
-      updateGeneratedOutput(updatedData); 
-      return updatedData; 
+        const updatedData = {
+            ...prev,
+            [field]: value
+        };
+        updateGeneratedOutput(updatedData); 
+        return updatedData; 
     }); 
-  }
+};
+
 
   const updateGeneratedOutput = (updatedData: any) => {
-    if (!userYear) {
-      console.log('Waiting for userYear before updating output');
-      return;
-    }
+    if (!updatedData) return;
 
-    console.log('Updating generated output with:', { updatedData, userYear });
-    
     const department = updatedData.department || 'GDP';
-    
-    let output = `Pt. presented to Year ${userYear} ${department} Clinic ${updatedData.clinic || ''} for ${updatedData.appointmentType || ''}\n`;
+
+    let output = `Pt. presented to Year ${userYear} ${department} Clinic ${updatedData.clinic} for ${updatedData.appointmentType}\n`;
     output += "3C's confirmed.";
     if (updatedData.colgateRinse) {
-        output += " Colgate 1.5% Hydrogen Peroxide Mouth rinse given.\n";
-    } else {
-        output += "\n";
+        output += " Colgate 1.5% Hydrogen Peroxide Mouth rinse given.";
     }
-    output += `Medical Hx ${updatedData.medicalHx || 'updated'}\n\n`;
-    output += `Supervisor: Dr ${updatedData.supervisor || ''}\n`;
+    output += "\n";
+    
+    output += `Medical Hx ${updatedData.medicalHx}\n\n`;
+
+    // E/OE section
+    const eoeItems: string[] = [];
+    const eoeCustomItems: string[] = [];
+    Object.entries(updatedData.eoe).forEach(([key, checked]) => {
+        if (checked) {
+            eoeItems.push(key === 'tmj' ? 'TMJ' : `${key} m.`);
+        } else if (updatedData.eoeCustom[key]) {
+            eoeCustomItems.push(`${key}: ${updatedData.eoeCustom[key]}`);
+        }
+    });
+    
+    if (eoeItems.length > 0 || eoeCustomItems.length > 0) {
+        output += 'E/OE: ';
+        if (eoeItems.length > 0) {
+            output += `${eoeItems.join(', ')}- NAD`;
+        }
+        if (eoeCustomItems.length > 0) {
+            if (eoeItems.length > 0) output += '; ';
+            output += eoeCustomItems.join(', ');
+        }
+        output += '.\n';
+    }
+
+    // I/OE section
+    const ioeItems: string[] = [];
+    const ioeCustomItems: string[] = [];
+    Object.entries(updatedData.ioe).forEach(([key, checked]) => {
+        if (checked) {
+            ioeItems.push(key === 'hardTissue' ? 'Hard tissue & PSR – as charted in ISOH' : key);
+        } else if (updatedData.ioeCustom[key]) {
+            ioeCustomItems.push(`${key}: ${updatedData.ioeCustom[key]}`);
+        }
+    });
+
+    if (ioeItems.length > 0 || ioeCustomItems.length > 0) {
+        output += 'I/OE: ';
+        if (ioeItems.length > 0) {
+            output += `${ioeItems.join(', ')}- NAD`;
+        }
+        if (ioeCustomItems.length > 0) {
+            if (ioeItems.length > 0) output += '; ';
+            output += ioeCustomItems.join(', ');
+        }
+        output += '.\n';
+    }
+
+    output += `${updatedData.xrays}\n`;
+
+    // Add all the treatment phases if they have content
+    if (updatedData.provisionalTx) output += `Provisional Tx: ${updatedData.provisionalTx}\n`;
+    if (updatedData.txOptions) output += `Tx options discussed and presented to pt: ${updatedData.txOptions}\n`;
+    if (updatedData.systemicPhase) output += `Systemic phase: ${updatedData.systemicPhase}\n`;
+    if (updatedData.acutePhase) output += `Acute phase: ${updatedData.acutePhase}\n`;
+    if (updatedData.diseaseControl) output += `Disease control: ${updatedData.diseaseControl}\n`;
+    if (updatedData.definitivePhase) output += `Definitive phase: ${updatedData.definitivePhase}\n`;
+    if (updatedData.maintenancePhase) output += `Maintenance phase: ${updatedData.maintenancePhase}\n`;
+    if (updatedData.extraComment) output += `Extra comment: ${updatedData.extraComment}\n`;
+    
+    output += "\n";
+    output += `Supervisor: Dr ${updatedData.supervisor}\n`;
+
+    // Handle the three mutually exclusive options for the final line
     if (updatedData.generalWaitlist) {
         output += "Patient placed on general waitlist and separated\n";
     } else if (updatedData.nv) {
         output += `N/V: ${updatedData.nv}\n`;
+    } else if (updatedData.other) {
+        output += updatedData.other + '\n';
     }
 
     setGeneratedOutput(output);
   };
-
-  // Add a useEffect to monitor userYear changes
-  useEffect(() => {
-    console.log('userYear changed:', userYear);
-  }, [userYear]);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent default button behavior
@@ -228,10 +403,11 @@ export default function DiagnosticForm({
           <div className="space-y-2">
             <div className="container">
               <div className="form-container">
-                {/* <h2 className="form-title">Dental Clinic Form</h2> */}
 
-                <form className="space-y-3">
-                  <div className="space-y-1">
+                {/* <form className="space-y-3"> */}
+                <form className="flex flex-col gap-4">
+                  {/* <div className="space-y-1"> */}
+                  <div>
                     <Label>Note Title</Label>
                     <Input
                       placeholder="Note Title"
@@ -243,10 +419,8 @@ export default function DiagnosticForm({
                   <div className="space-y-1">
                     <Label>Department</Label>
                     <Tabs
-                      defaultValue="GDP"
                       value={formData.department || 'GDP'}
                       onValueChange={(value) => {
-                          console.log('Tab changing to:', value);
                           const updatedData = { ...formData, department: value };
                           setFormData(updatedData);
                           updateGeneratedOutput(updatedData);
@@ -316,6 +490,173 @@ export default function DiagnosticForm({
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <Separator className="space-y-8" />
+
+                  {/* E/OE Checkboxes */}
+                  <div className="space-y-2">
+                    <Label>E/OE Examination</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      {Object.entries({
+                        temporalis: "Temporalis m.",
+                        masseter: "Masseter m.",
+                        tmj: "TMJ",
+                        salivaryGlands: "Salivary Glands",
+                        lymphNodes: "Lymph Nodes",
+                        facialMuscles: "Facial Muscles"
+                      }).map(([key, label]) => (
+                        <div key={key} className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`eoe-${key}`}
+                              checked={formData.eoe[key as keyof typeof formData.eoe]}
+                              onCheckedChange={(checked) => 
+                                  handleChange('eoe', { ...formData.eoe, [key]: !!checked })}
+                            />
+                            <Label htmlFor={`eoe-${key}`}>{label}</Label>
+                          </div>
+                          {!formData.eoe[key as keyof typeof formData.eoe] && (
+                            <Input
+                              placeholder={`Enter findings for ${label}`}
+                              value={formData.eoeCustom[key as keyof typeof formData.eoeCustom]}
+                              onChange={(e) => handleChange('eoeCustom', { 
+                                ...formData.eoeCustom, 
+                                [key]: e.target.value 
+                              })}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* I/OE Checkboxes */}
+                  <div className="space-y-4">
+                    <Label>I/OE Examination</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      {Object.entries({
+                        fom: "FOM",
+                        tongue: "Tongue",
+                        palatalMucosa: "Palatal Mucosa",
+                        buccalMucosa: "Buccal Mucosa",
+                        hardTissue: "Hard Tissue & PSR"
+                      }).map(([key, label]) => (
+                        <div key={key} className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`ioe-${key}`}
+                              checked={formData.ioe[key as keyof typeof formData.ioe]}
+                              onCheckedChange={(checked) => 
+                                  handleChange('ioe', { ...formData.ioe, [key]: !!checked })}
+                            />
+                            <Label htmlFor={`ioe-${key}`}>{label}</Label>
+                          </div>
+                          {!formData.ioe[key as keyof typeof formData.ioe] && (
+                            <Input
+                              placeholder={`Enter findings for ${label}`}
+                              value={formData.ioeCustom[key as keyof typeof formData.ioeCustom]}
+                              onChange={(e) => handleChange('ioeCustom', { 
+                                ...formData.ioeCustom, 
+                                [key]: e.target.value 
+                              })}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* X-rays Selection */}
+                  <div className="space-y-1">
+                      <Label>X-rays</Label>
+                      <Select value={formData.xrays} onValueChange={(value) => handleChange('xrays', value)}>
+                          <SelectTrigger>
+                              <SelectValue placeholder="Select x-ray option" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              <SelectItem value="OPG & 2x BWs taken">OPG & 2x BWs taken</SelectItem>
+                              <SelectItem value="2x BWs taken. No OPG Indicated">2x BWs taken. No OPG Indicated</SelectItem>
+                              <SelectItem value="No x-rays taken">No x-rays taken</SelectItem>
+                          </SelectContent>
+                      </Select>
+                  </div>
+
+                  {/* Treatment Phases */}
+                  <div className="space-y-4">
+                      <div className="space-y-1">
+                          <Label>Provisional Treatment</Label>
+                          <Textarea
+                              value={formData.provisionalTx}
+                              onChange={(e) => handleChange('provisionalTx', e.target.value)}
+                              placeholder="Enter provisional treatment..."
+                          />
+                      </div>
+
+                      <div className="space-y-1">
+                          <Label>Treatment Options</Label>
+                          <Textarea
+                              value={formData.txOptions}
+                              onChange={(e) => handleChange('txOptions', e.target.value)}
+                              placeholder="Enter treatment options discussed..."
+                          />
+                      </div>
+
+                      <div className="space-y-1">
+                          <Label>Systemic Phase</Label>
+                          <Textarea
+                              value={formData.systemicPhase}
+                              onChange={(e) => handleChange('systemicPhase', e.target.value)}
+                              placeholder="Enter systemic phase details..."
+                          />
+                      </div>
+
+                      <div className="space-y-1">
+                          <Label>Acute Phase</Label>
+                          <Textarea
+                              value={formData.acutePhase}
+                              onChange={(e) => handleChange('acutePhase', e.target.value)}
+                              placeholder="Enter acute phase details..."
+                          />
+                      </div>
+
+                      <div className="space-y-1">
+                          <Label>Disease Control</Label>
+                          <Textarea
+                              value={formData.diseaseControl}
+                              onChange={(e) => handleChange('diseaseControl', e.target.value)}
+                              placeholder="Enter disease control details..."
+                          />
+                      </div>
+
+                      <div className="space-y-1">
+                          <Label>Definitive Phase</Label>
+                          <Textarea
+                              value={formData.definitivePhase}
+                              onChange={(e) => handleChange('definitivePhase', e.target.value)}
+                              placeholder="Enter definitive phase details..."
+                          />
+                      </div>
+
+                      <div className="space-y-1">
+                          <Label>Maintenance Phase</Label>
+                          <Textarea
+                              value={formData.maintenancePhase}
+                              onChange={(e) => handleChange('maintenancePhase', e.target.value)}
+                              placeholder="Enter maintenance phase details..."
+                          />
+                      </div>
+
+                      <div className="space-y-1">
+                          <Label>Extra Comments</Label>
+                          <Textarea
+                              value={formData.extraComment}
+                              onChange={(e) => handleChange('extraComment', e.target.value)}
+                              placeholder="Enter any additional comments..."
+                          />
+                      </div>
+                  </div>
+
+                  <Separator className="my-1" />
 
                   <div className="space-y-1">
                     <Label htmlFor="supervisor">Supervisor</Label>
